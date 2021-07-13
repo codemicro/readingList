@@ -22,7 +22,7 @@ jobs:
         uses: magefile/mage-action@v1
         with:
           version: latest
-          args: -v generateReadme generateSite
+          args: -v GenerateSite
 
       - name: Commit changes
         run: |

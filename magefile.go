@@ -71,7 +71,7 @@ func renderHTMLPage(title, titleBar, pageContent, extraHeadeContent string) ([]b
 
 type entryGroup struct {
 	Date    time.Time
-	Entries []*readingListEntry
+	Entries entrySlice
 }
 
 type entryGroupSlice []*entryGroup
@@ -85,6 +85,20 @@ func (e entryGroupSlice) Less(i, j int) bool {
 }
 
 func (e entryGroupSlice) Swap(i, j int) {
+	e[i], e[j] = e[j], e[i]
+}
+
+type entrySlice []*readingListEntry
+
+func (e entrySlice) Len() int {
+	return len(e)
+}
+
+func (e entrySlice) Less(i, j int) bool {
+	return e[i].Date.After(e[j].Date)
+}
+
+func (e entrySlice) Swap(i, j int) {
 	e[i], e[j] = e[j], e[i]
 }
 
@@ -103,6 +117,7 @@ func groupEntriesByMonth(entries []*readingListEntry) entryGroupSlice {
 
 	var o entryGroupSlice
 	for _, group := range groupMap {
+		sort.Sort(group.Entries)
 		o = append(o, group)
 	}
 	sort.Sort(o)
@@ -122,9 +137,9 @@ func makeListHTML(groups []*entryGroup) string {
 
 		var entries []daz.HTML
 		for _, article := range group.Entries {
-			items := []interface{}{renderAnchor(article.Title, article.URL, false), " - "+article.Date.Format(dateFormat)}
+			items := []interface{}{renderAnchor(article.Title, article.URL, false), " - " + article.Date.Format(dateFormat)}
 			if article.Description != "" {
-				items = append(items, daz.H("br"), article.Description)
+				items = append(items, daz.H("br"), daz.H("span", "Description: "+article.Description))
 			}
 			x := daz.H("li", items...)
 			entries = append(entries, x)
@@ -157,7 +172,7 @@ func GenerateSite() error {
 	numArticles := len(entries)
 	groupedEntries := groupEntriesByMonth(entries)
 
-	const pageTitle = "akp's reading list"	
+	const pageTitle = "akp's reading list"
 
 	head := daz.H(
 		"div",
@@ -166,7 +181,7 @@ func GenerateSite() error {
 			"p",
 			daz.UnsafeContent(
 				fmt.Sprintf(
-					"A mostly complete list of articles I've read<br>There are currently %d entries in the list<br>Last modified %s<br>Repo: %s",
+					"A mostly complete list of articles I've read<br>There are currently %d entries in the list, with the most recently read listed first<br>Last modified %s<br>Repo: %s",
 					numArticles,
 					time.Now().Format(dateFormat),
 					renderUnsafeAnchor("<code>codemicro/readingList</code>", "https://github.com/codemicro/readingList", false)(),

@@ -7,6 +7,7 @@ import (
 	_ "embed"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"sort"
 	"text/template"
 	"time"
@@ -181,7 +182,7 @@ func GenerateSite() error {
 			"p",
 			daz.UnsafeContent(
 				fmt.Sprintf(
-					"A mostly complete list of articles I've read<br>There are currently %d entries in the list, with the most recently read listed first<br>Last modified %s<br>Repo: %s",
+					"A mostly complete list of articles I've read<br>There are currently %d entries in the list<br>Last modified %s<br>Repo: %s",
 					numArticles,
 					time.Now().Format(dateFormat),
 					renderUnsafeAnchor("<code>codemicro/readingList</code>", "https://github.com/codemicro/readingList", false)(),
@@ -197,7 +198,7 @@ func GenerateSite() error {
 		return err
 	}
 
-	fmt.Println(string(outputContent))
+	_ = os.Mkdir(".site", 0777)
 
-	return nil
+	return ioutil.WriteFile(".site/index.html", outputContent, 0644)
 }

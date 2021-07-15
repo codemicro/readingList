@@ -22,6 +22,7 @@ type readingListEntry struct {
 	URL         string    `csv:"url,omitempty"`
 	Title       string    `csv:"title,omitempty"`
 	Description string    `csv:"description,omitempty"`
+	Image       string    `csv:"image,omitempty"`
 	Date        time.Time `csv:"date,omitempty"`
 }
 
@@ -138,12 +139,29 @@ func makeListHTML(groups []*entryGroup) string {
 
 		var entries []daz.HTML
 		for _, article := range group.Entries {
-			items := []interface{}{renderAnchor(article.Title, article.URL, false), " - " + article.Date.Format(dateFormat)}
-			if article.Description != "" {
-				items = append(items, daz.H("br"), daz.H("span", "Description: "+article.Description))
+
+			titleLine := daz.H("summary", renderAnchor(article.Title, article.URL, false), " - " + article.Date.Format(dateFormat))
+
+			detailedInfo := []interface{}{}
+
+			{
+				var descriptionContent string
+				if article.Description != "" {
+					descriptionContent = article.Description
+				} else {
+					descriptionContent = "<none>"
+				}
+				detailedInfo = append(detailedInfo, daz.H("div", "Description:", daz.H("i", descriptionContent)))
 			}
-			x := daz.H("li", items...)
-			entries = append(entries, x)
+
+			{
+				if article.Image != "" {
+					detailedInfo = append(detailedInfo, daz.H("div", "Image:", daz.H("br"), daz.H("img", daz.Attr{"src": article.Image, "loading": "lazy", "style": "max-width: 256px;"})))
+				}
+			}
+
+			detailedInfo = append(detailedInfo, daz.Attr{"class": "description"})
+			entries = append(entries, daz.H("li", daz.H("details", titleLine, daz.H("div", detailedInfo...))))
 		}
 
 		parts = append(parts, []daz.HTML{header, daz.H("ul", entries)})

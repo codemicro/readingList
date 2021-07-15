@@ -130,7 +130,7 @@ func groupEntriesByMonth(entries []*readingListEntry) entryGroupSlice {
 // makeTILHTML generates HTML from a []*entryGroup to make a list of articles
 func makeListHTML(groups []*entryGroup) string {
 
-	const headerLevel = "h3"
+	const headerLevel = "h2"
 
 	var parts []interface{}
 	for _, group := range groups {
@@ -195,9 +195,11 @@ func GenerateSite() error {
 
 	head := daz.H(
 		"div",
+		daz.Attr{"class": "heading"},
 		daz.H("h1", pageTitle),
 		daz.H(
 			"p",
+			daz.Attr{"class": "information"},
 			daz.UnsafeContent(
 				fmt.Sprintf(
 					"A mostly complete list of articles I've read<br>There are currently %d entries in the list<br>Last modified %s<br>Repo: %s",

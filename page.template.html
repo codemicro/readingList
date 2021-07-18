@@ -10,17 +10,11 @@
             :root {
                 --font-monospace: 'Inconsolata', monospace;
                 --font-sansserif: 'Lato', sans-serif;
-                background-color: #F3F4F6;
             }
 
             h1, h2, h3, h4, h5, h6 {
                 font-family: var(--font-monospace);
                 font-weight: 700;
-                font-size: 3rem;
-            }
-
-            h2 {
-                font-size: 2rem;
             }
 
             body {
@@ -30,34 +24,13 @@
 
             .description {
                 color: #7e7e7e;
-                border-left: 2px solid #b1b1b1;
-                margin-left: 0em;
+                border-left: 0.3em solid #b1b1b1;
+                margin-left: 1.2em;
                 padding-left: 0.4em;
-            }
-
-            .information {
-                color: #374151;
             }
 
             ul {
                 list-style-type: none;
-
-                background: white;
-                padding: 2rem;
-                margin-bottom: 1rem;
-                border-radius: 1rem;
-                --tw-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-                box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
-            }
-
-            .heading {
-                margin-top: 2rem;
-                /*background-color: white;*/
-                background-image: linear-gradient(to bottom left, #EEF2FF, #FEF2F2);
-                padding: 1rem 2rem;
-                border-radius: 1rem;
-                --tw-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-                box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
             }
         </style>
 
@@ -68,6 +41,8 @@
     <body>
     
         {{ .PageTitleBar }}
+
+        <hr>
 
         {{ .Content }}
 

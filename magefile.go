@@ -5,14 +5,17 @@ package main
 import (
 	"bytes"
 	_ "embed"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"sort"
 	"text/template"
 	"time"
 
 	"github.com/jszwec/csvutil"
+	"github.com/schollz/progressbar/v3"
 	"github.com/stevelacy/daz"
 )
 
@@ -127,20 +130,115 @@ func groupEntriesByMonth(entries []*readingListEntry) entryGroupSlice {
 	return o
 }
 
+var hnHTTPClient = new(http.Client)
+
+type hackerNewsEntry struct {
+	ObjectID string `json:"objectID"`
+	Points   int    `json:"points"`
+}
+
+var hackerNewsSubmissionURL = "https://news.ycombinator.com/item?id=%s"
+
+var totalRequestedHNQueries int
+
+// queryHackerNews searches the Hacker News index to find a submission with a matching URL to that provided.
+// If a submission is found, its URL is returned. If no submission is found, an empty string is returned. If multiple submissions are found, the URL of the one with the most points is returned.
+func queryHackerNews(url string) (string, error) {
+
+	if totalRequestedHNQueries > 500 { // there's a ratelimit of 10000 search requests per hour - stopping at 500 per run this means that we can add a maximum of 20 pages per hour
+		return "", nil
+	}
+
+	req, err := http.NewRequest("GET", "https://hn.algolia.com/api/v1/search", nil)
+	if err != nil {
+		return "", err
+	}
+
+	// why does this fel so hacky
+	queryParams := req.URL.Query()
+	queryParams.Add("restrictSearchableAttributes", "url")
+	queryParams.Add("hitsPerPage", "1000")
+	queryParams.Add("query", url)
+	req.URL.RawQuery = queryParams.Encode()
+
+	resp, err := hnHTTPClient.Do(req)
+	totalRequestedHNQueries += 1
+	if err != nil {
+		return "", err
+	}
+
+	if resp.StatusCode != 200 {
+		return "", fmt.Errorf("HN Search returned a non-200 status code: %d", resp.StatusCode)
+	}
+
+	responseBody, _ := ioutil.ReadAll(resp.Body)
+	resp.Body.Close()
+
+	var x struct {
+		Hits []*hackerNewsEntry `json:"hits"`
+	}
+
+	err = json.Unmarshal(responseBody, &x)
+	if err != nil {
+		return "", err
+	}
+
+	var targetSubmission *hackerNewsEntry
+	if len(x.Hits) == 0 {
+		return "", nil
+	} else if len(x.Hits) == 1 {
+		targetSubmission = x.Hits[0]
+	} else {
+		// must be more than one hit
+		var topRatedSubmission *hackerNewsEntry
+		for _, entry := range x.Hits {
+			if topRatedSubmission == nil || entry.Points > topRatedSubmission.Points {
+				topRatedSubmission = entry
+			}
+		}
+		targetSubmission = topRatedSubmission
+	}
+
+	return fmt.Sprintf(hackerNewsSubmissionURL, targetSubmission.ObjectID), nil
+}
+
 // makeTILHTML generates HTML from a []*entryGroup to make a list of articles
 func makeListHTML(groups []*entryGroup) string {
 
 	const headerLevel = "h3"
 
-	var parts []interface{}
-	for _, group := range groups {
+	numGroups := len(groups)
 
-		header := daz.H(headerLevel, fmt.Sprintf("%s %d", group.Date.Month().String(), group.Date.Year()))
+	var parts []interface{}
+	for groupNumber, group := range groups {
+
+		dateString := fmt.Sprintf("%s %d", group.Date.Month().String(), group.Date.Year())
+
+		header := daz.H(headerLevel, dateString)
+
+		pb := progressbar.NewOptions(len(group.Entries),
+			progressbar.OptionSetDescription(fmt.Sprintf("[%d/%d] %s", groupNumber+1, numGroups, dateString)),
+		)
 
 		var entries []daz.HTML
 		for _, article := range group.Entries {
 
-			titleLine := daz.H("summary", renderAnchor(article.Title, article.URL, false), " - " + article.Date.Format(dateFormat))
+			hnURL, err := queryHackerNews(article.URL)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Warning: unable to complete Hacker News query for article %s", article.URL)
+			}
+
+			var titleLineItems = []interface{}{
+				renderAnchor(article.Title, article.URL, false),
+				" - " + article.Date.Format(dateFormat),
+			}
+
+			if hnURL != "" {
+				titleLineItems = append(titleLineItems, " ")
+				titleLineItems = append(titleLineItems, daz.H("a", daz.Attr{"href": hnURL, "rel": "noopener"}, daz.H("img", daz.Attr{"src": "https://news.ycombinator.com/y18.gif", "height": "14em", "title": "View on Hacker News", "alt": "Hacker News logo"})))
+			}
+
+			titleLine := daz.H("summary", titleLineItems...)
 
 			detailedInfo := []interface{}{}
 
@@ -162,10 +260,14 @@ func makeListHTML(groups []*entryGroup) string {
 
 			detailedInfo = append(detailedInfo, daz.Attr{"class": "description"})
 			entries = append(entries, daz.H("li", daz.H("details", titleLine, daz.H("div", detailedInfo...))))
+
+			pb.Add(1)
 		}
 
 		parts = append(parts, []daz.HTML{header, daz.H("ul", entries)})
 	}
+
+	fmt.Println() // the progress bars do weird newline things
 
 	return daz.H("div", parts...)()
 }

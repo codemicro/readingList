@@ -5,10 +5,8 @@ package main
 import (
 	"bytes"
 	_ "embed"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"sort"
 	"text/template"
@@ -159,7 +157,7 @@ func makeListHTML(groups []*entryGroup) string {
 
 			if article.HackerNewsURL != "" {
 				titleLineItems = append(titleLineItems, " ")
-				titleLineItems = append(titleLineItems, daz.H("a", daz.Attr{"href": hnURL, "rel": "noopener"}, daz.H("img", daz.Attr{"src": "https://news.ycombinator.com/y18.gif", "height": "14em", "title": "View on Hacker News", "alt": "Hacker News logo"})))
+				titleLineItems = append(titleLineItems, daz.H("a", daz.Attr{"href": article.HackerNewsURL, "rel": "noopener"}, daz.H("img", daz.Attr{"src": "https://news.ycombinator.com/y18.gif", "height": "14em", "title": "View on Hacker News", "alt": "Hacker News logo"})))
 			}
 
 			titleLine := daz.H("summary", titleLineItems...)

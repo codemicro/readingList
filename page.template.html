@@ -4,41 +4,13 @@
         <title>{{ .Title }}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta charset="utf-8">
-        <style>
-            @import url('https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;700&family=Lato&display=swap');
-
-            :root {
-                --font-monospace: 'Inconsolata', monospace;
-                --font-sansserif: 'Lato', sans-serif;
-            }
-
-            h1, h2, h3, h4, h5, h6 {
-                font-family: var(--font-monospace);
-                font-weight: 700;
-            }
-
-            body {
-                font-family: var(--font-sansserif);
-                padding: 0 2em 2em 2em;
-            }
-
-            .description {
-                color: #7e7e7e;
-                border-left: 0.3em solid #b1b1b1;
-                margin-left: 1.2em;
-                padding-left: 0.4em;
-            }
-
-            ul {
-                list-style-type: none;
-            }
-        </style>
+        <link rel="stylesheet" type="text/css" href="assets/styles.css" />
 
         {{ .ExtraHeadContent }}
 
     </head>
 
-    <body>
+    <body class="container">
     
         {{ .PageTitleBar }}
 

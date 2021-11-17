@@ -1,3 +1,4 @@
+//go:build mage
 // +build mage
 
 package main
@@ -5,9 +6,12 @@ package main
 import (
 	"bytes"
 	_ "embed"
+	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"sort"
 	"text/template"
 	"time"
@@ -156,32 +160,15 @@ func makeListHTML(groups []*entryGroup) string {
 			}
 
 			if article.HackerNewsURL != "" {
-				titleLineItems = append(titleLineItems, " ")
+				titleLineItems = append(titleLineItems, " - ")
 				titleLineItems = append(titleLineItems, daz.H("a", daz.Attr{"href": article.HackerNewsURL, "rel": "noopener"}, daz.H("img", daz.Attr{"src": "https://news.ycombinator.com/y18.gif", "height": "14em", "title": "View on Hacker News", "alt": "Hacker News logo"})))
 			}
 
-			titleLine := daz.H("summary", titleLineItems...)
-
-			detailedInfo := []interface{}{}
-
-			{
-				var descriptionContent string
-				if article.Description != "" {
-					descriptionContent = article.Description
-				} else {
-					descriptionContent = "<none>"
-				}
-				detailedInfo = append(detailedInfo, daz.H("div", "Description:", daz.H("i", descriptionContent)))
+			if article.Description != "" {
+				titleLineItems = append(titleLineItems, daz.H("span", daz.Attr{"class": "secondary"}, " - "+article.Description))
 			}
 
-			{
-				if article.Image != "" {
-					detailedInfo = append(detailedInfo, daz.H("div", "Image:", daz.H("br"), daz.H("img", daz.Attr{"src": article.Image, "loading": "lazy", "style": "max-width: 256px;"})))
-				}
-			}
-
-			detailedInfo = append(detailedInfo, daz.Attr{"class": "description"})
-			entries = append(entries, daz.H("li", daz.H("details", titleLine, daz.H("div", detailedInfo...))))
+			entries = append(entries, daz.H("li", titleLineItems...))
 
 			pb.Add(1)
 		}
@@ -241,6 +228,99 @@ func GenerateSite() error {
 	}
 
 	_ = os.Mkdir(".site", 0777)
+	_ = os.Mkdir(".site/assets", 0777)
+
+	if err := CopyDirectory("./assets", "./.site/assets"); err != nil {
+		return err
+	}
 
 	return ioutil.WriteFile(".site/index.html", outputContent, 0644)
+}
+
+// COPYING FGUNCTIONGSONS
+
+func CopyDirectory(scrDir, dest string) error {
+	entries, err := ioutil.ReadDir(scrDir)
+	if err != nil {
+		return err
+	}
+
+	for _, entry := range entries {
+		sourcePath := filepath.Join(scrDir, entry.Name())
+		destPath := filepath.Join(dest, entry.Name())
+
+		fileInfo, err := os.Stat(sourcePath)
+		if err != nil {
+			return err
+		}
+
+		switch fileInfo.Mode() & os.ModeType {
+		case os.ModeDir:
+			if err := CreateIfNotExists(destPath, 0755); err != nil {
+				return err
+			}
+			if err := CopyDirectory(sourcePath, destPath); err != nil {
+				return err
+			}
+		case os.ModeSymlink:
+			if err := CopySymLink(sourcePath, destPath); err != nil {
+				return err
+			}
+		default:
+			if err := CopyFile(sourcePath, destPath); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func CopyFile(srcFile, dstFile string) error {
+	out, err := os.Create(dstFile)
+	if err != nil {
+		return err
+	}
+
+	defer out.Close()
+
+	in, err := os.Open(srcFile)
+	defer in.Close()
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(out, in)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func Exists(filePath string) bool {
+	if _, err := os.Stat(filePath); errors.Is(err, os.ErrExist) {
+		return false
+	}
+
+	return true
+}
+
+func CreateIfNotExists(dir string, perm os.FileMode) error {
+	if Exists(dir) {
+		return nil
+	}
+
+	if err := os.MkdirAll(dir, perm); err != nil {
+		return fmt.Errorf("failed to create directory: '%s', error: '%s'", dir, err.Error())
+	}
+
+	return nil
+}
+
+func CopySymLink(source, dest string) error {
+	link, err := os.Readlink(source)
+	if err != nil {
+		return err
+	}
+	return os.Symlink(link, dest)
 }

@@ -228,11 +228,11 @@ func GenerateSite() error {
 	}
 
 	_ = os.Mkdir(".site", 0777)
-	_ = os.Mkdir(".site/assets", 0777)
+	// _ = os.Mkdir(".site/assets", 0777)
 
-	if err := CopyDirectory("./assets", "./.site/assets"); err != nil {
-		return err
-	}
+	// if err := CopyDirectory("./assets", "./.site/assets"); err != nil {
+	// 	return err
+	// }
 
 	return ioutil.WriteFile(".site/index.html", outputContent, 0644)
 }

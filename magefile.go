@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"os"
 	"sort"
+	"strings"
 	"text/template"
 	"time"
 
@@ -75,7 +76,9 @@ func renderHTMLPage(title, titleBar, pageContent, extraHeadeContent string) ([]b
 }
 
 type entryGroup struct {
+	Title   string
 	Date    time.Time
+	ID      string
 	Entries entrySlice
 }
 
@@ -114,7 +117,9 @@ func groupEntriesByMonth(entries []*readingListEntry) entryGroupSlice {
 		newTime := time.Date(entry.Date.Year(), entry.Date.Month(), 1, 0, 0, 0, 0, time.UTC)
 		if groupMap[newTime] == nil {
 			groupMap[newTime] = &entryGroup{
-				Date: newTime,
+				Date:  newTime,
+				Title: fmt.Sprintf("%s %d", newTime.Month().String(), newTime.Year()),
+				ID:    strings.ToLower(fmt.Sprintf("%s-%d", newTime.Month().String(), newTime.Year())),
 			}
 		}
 		groupMap[newTime].Entries = append(groupMap[newTime].Entries, entry)
@@ -137,12 +142,19 @@ func makeListHTML(groups []*entryGroup) string {
 
 	numGroups := len(groups)
 
-	var parts []interface{}
+	subsections := []interface{}{"Jump to "}
+	for i := numGroups - 1; i >= 0; i -= 1 {
+		group := groups[i]
+		subsections = append(subsections, " :: ", renderAnchor(fmt.Sprintf("%s %d", group.Date.Month().String()[:3], group.Date.Year()), "#" + group.ID, false))
+	}
+	
+	parts := []interface{}{daz.H("br"), daz.H("span", subsections...)}
+
 	for groupNumber, group := range groups {
 
-		dateString := fmt.Sprintf("%s %d", group.Date.Month().String(), group.Date.Year())
+		dateString := group.Title
 
-		header := daz.H(headerLevel, dateString)
+		header := daz.H(headerLevel, dateString, daz.Attr{"id": group.ID})
 
 		pb := progressbar.NewOptions(len(group.Entries),
 			progressbar.OptionSetDescription(fmt.Sprintf("[%d/%d] %s", groupNumber+1, numGroups, dateString)),

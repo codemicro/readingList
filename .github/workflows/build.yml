@@ -26,15 +26,6 @@ jobs:
           version: latest
           args: -v GenerateSite
 
-      - name: Commit changes
-        run: |
-          git config user.email 'actions@github.com'
-          git config user.name 'github-actions'
-          git add README.md
-          git commit -m 'Update README.md'
-          git push origin HEAD:${{ github.ref }}
-        continue-on-error: true # if there's nothing changed, this step would error
-
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v1.1.0
         env:

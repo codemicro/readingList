@@ -7,7 +7,7 @@ on:
     - "readingList.csv"
 
 jobs:
-  mage:
+  build-site:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

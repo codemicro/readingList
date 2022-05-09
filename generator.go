@@ -1,6 +1,3 @@
-//go:build mage
-// +build mage
-
 package main
 
 import (
@@ -244,4 +241,11 @@ func GenerateSite() error {
 	// }
 
 	return ioutil.WriteFile(".site/index.html", outputContent, 0644)
+}
+
+func main() {
+	if err := GenerateSite(); err != nil {
+		fmt.Fprintf(os.Stderr, "Unhandled error: %v\n", err)
+		os.Exit(1)
+	}
 }

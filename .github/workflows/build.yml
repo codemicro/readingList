@@ -5,6 +5,7 @@ on:
   push:
     paths:
     - "readingList.csv"
+    - "generator.go"
 
 jobs:
   build-site:

@@ -217,7 +217,7 @@ func GenerateSite() error {
 			"p",
 			daz.UnsafeContent(
 				fmt.Sprintf(
-					"A mostly complete list of articles I've read<br>There are currently %d entries in the list<br>Last modified %s<br>Repo: %s",
+					"A mostly complete list of articles I've read on the internet<br>There are currently %d entries in the list<br>Last modified %s<br>Repo: %s",
 					numArticles,
 					time.Now().Format(dateFormat),
 					renderUnsafeAnchor("<code>codemicro/readingList</code>", "https://github.com/codemicro/readingList", false)(),

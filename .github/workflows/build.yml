@@ -6,6 +6,7 @@ on:
     paths:
     - "readingList.csv"
     - "generator.go"
+    - "page.template.html"
 
 jobs:
   build-site:

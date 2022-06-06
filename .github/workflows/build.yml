@@ -8,6 +8,10 @@ on:
     - "generator.go"
     - "page.template.html"
 
+concurrency: # Prevent two instances of this running at once
+  group: deploy-to-ghpages
+  cancel-in-progress: true
+
 jobs:
   build-site:
     runs-on: ubuntu-latest

@@ -6,7 +6,6 @@ on:
     paths:
     - "readingList.csv"
     - "generator.go"
-    - "page.template.html"
 
 concurrency: # Prevent two instances of this running at once
   group: deploy-to-ghpages

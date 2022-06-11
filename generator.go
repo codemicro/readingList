@@ -8,12 +8,13 @@ import (
 	"os"
 	"sort"
 	"strings"
-	"text/template"
 	"time"
 
 	"github.com/jszwec/csvutil"
+	g "github.com/maragudk/gomponents"
+	c "github.com/maragudk/gomponents/components"
+	. "github.com/maragudk/gomponents/html"
 	"github.com/schollz/progressbar/v3"
-	"github.com/stevelacy/daz"
 )
 
 const dateFormat = "2006-01-02"
@@ -27,49 +28,19 @@ type readingListEntry struct {
 	HackerNewsURL string    `csv:"hnurl,omitempty"`
 }
 
-// renderAnchor renders a HTML anchor tag
-func renderAnchor(text, url string, newTab bool) daz.HTML {
-	attrs := daz.Attr{
-		"href": url,
-		"rel":  "noopener",
-	}
-	if newTab {
-		attrs["target"] = "_blank"
-	}
-	return daz.H("a", attrs, text)
-}
-
-func renderUnsafeAnchor(text, url string, newTab bool) daz.HTML {
-	attrs := daz.Attr{
-		"href": url,
-		"rel":  "noopener",
-	}
-	if newTab {
-		attrs["target"] = "_blank"
-	}
-	return daz.H("a", attrs, daz.UnsafeContent(text))
-}
-
-//go:embed page.template.html
-var htmlPageTemplate []byte
-
 // renderHTMLPage renders a complete HTML page
-func renderHTMLPage(title, titleBar, pageContent, extraHeadeContent string) ([]byte, error) {
-
-	tpl, err := template.New("page").Parse(string(htmlPageTemplate))
+func renderHTMLPage(title string, body []g.Node) ([]byte, error) {
+	b := new(bytes.Buffer)
+	err := c.HTML5(c.HTML5Props{
+		Title:    title,
+		Language: "en-GB",
+		Head:     []g.Node{Link(g.Attr("rel", "stylesheet"), g.Attr("href", "https://www.tdpain.net/assets/css/ghpages.css"), g.Attr("type", "text/css"))},
+		Body:     []g.Node{Div(g.Attr("class", "container"), g.Group(body))},
+	}).Render(b)
 	if err != nil {
 		return nil, err
 	}
-	outputBuf := new(bytes.Buffer)
-
-	tpl.Execute(outputBuf, struct {
-		Title            string
-		Content          string
-		PageTitleBar     string
-		ExtraHeadContent string
-	}{Content: pageContent, PageTitleBar: titleBar, Title: title, ExtraHeadContent: extraHeadeContent})
-
-	return outputBuf.Bytes(), nil
+	return b.Bytes(), nil
 }
 
 type entryGroup struct {
@@ -133,58 +104,79 @@ func groupEntriesByMonth(entries []*readingListEntry) entryGroupSlice {
 }
 
 // makeTILHTML generates HTML from a []*entryGroup to make a list of articles
-func makeListHTML(groups []*entryGroup) string {
+func makeListHTML(groups []*entryGroup) g.Node {
 
-	const headerLevel = "h3"
+	headerLevel := H3
 
 	numGroups := len(groups)
 
-	subsections := []interface{}{"Jump to "}
+	var subsections []g.Node
 	for i := numGroups - 1; i >= 0; i -= 1 {
 		group := groups[i]
-		subsections = append(subsections, " :: ", renderAnchor(fmt.Sprintf("%s %d", group.Date.Month().String()[:3], group.Date.Year()), "#" + group.ID, false))
+		subsections = append(subsections, A(g.Attr("href", "#"+group.ID), g.Textf("%s %d", group.Date.Month().String()[:3], group.Date.Year())))
 	}
-	
-	parts := []interface{}{daz.H("br"), daz.H("span", subsections...)}
+
+	parts := []g.Node{
+		Br(),
+		Span(g.Text("Jump to :: "), g.Group(g.Map(len(subsections), func(i int) g.Node {
+			n := subsections[i]
+			if i != len(subsections)-1 {
+				n = g.Group([]g.Node{n, g.Text(" :: ")})
+			}
+			return n
+		}))),
+	}
 
 	for groupNumber, group := range groups {
 
 		dateString := group.Title
 
-		header := daz.H(headerLevel, dateString, daz.Attr{"id": group.ID})
+		header := headerLevel(g.Attr("id", group.ID), g.Text(dateString))
 
 		pb := progressbar.NewOptions(len(group.Entries),
 			progressbar.OptionSetDescription(fmt.Sprintf("[%d/%d] %s", groupNumber+1, numGroups, dateString)),
 		)
 
-		var entries []daz.HTML
+		var entries []g.Node
 		for _, article := range group.Entries {
 
-			var titleLineItems = []interface{}{
-				renderAnchor(article.Title, article.URL, false),
-				" - " + article.Date.Format(dateFormat),
-			}
-
-			if article.HackerNewsURL != "" {
-				titleLineItems = append(titleLineItems, " - ")
-				titleLineItems = append(titleLineItems, daz.H("a", daz.Attr{"href": article.HackerNewsURL, "rel": "noopener"}, daz.H("img", daz.Attr{"src": "https://news.ycombinator.com/y18.gif", "height": "14em", "title": "View on Hacker News", "alt": "Hacker News logo"})))
-			}
-
-			if article.Description != "" {
-				titleLineItems = append(titleLineItems, daz.H("span", daz.Attr{"class": "secondary"}, " - "+article.Description))
-			}
-
-			entries = append(entries, daz.H("li", titleLineItems...))
+			entries = append(entries, articleLinkComponent(
+				article.URL,
+				article.Title,
+				article.Description,
+				article.Date.Format(dateFormat),
+				article.HackerNewsURL),
+			)
 
 			pb.Add(1)
 		}
 
-		parts = append(parts, []daz.HTML{header, daz.H("ul", entries)})
+		parts = append(parts, header, Ul(entries...))
 	}
 
 	fmt.Println() // the progress bars do weird newline things
 
-	return daz.H("div", parts...)()
+	return Div(parts...)
+}
+
+func articleLinkComponent(url, title, description, date, hnURL string) g.Node {
+	return Li(
+		A(g.Attr("href", url), g.Text(title)),
+		g.Text(" - "+date),
+		g.If(hnURL != "", g.Group([]g.Node{
+			g.Text(" - "),
+			A(
+				g.Attr("href", hnURL),
+				g.Attr("rel", "noopener"),
+				Img(
+					g.Attr("src", "https://news.ycombinator.com/y18.gif"),
+					g.Attr("height", "14em"),
+					g.Attr("title", "View on Hacker News"),
+					g.Attr("alt", "Hacker News logo"),
+				)),
+		})),
+		g.If(description != "", Span(g.Attr("class", "secondary"), g.Text(" - "+description))),
+	)
 }
 
 func GenerateSite() error {
@@ -210,25 +202,21 @@ func GenerateSite() error {
 
 	const pageTitle = "akp's reading list"
 
-	head := daz.H(
-		"div",
-		daz.H("h1", pageTitle),
-		daz.H(
-			"p",
-			daz.UnsafeContent(
-				fmt.Sprintf(
-					"A mostly complete list of articles I've read on the internet<br>There are currently %d entries in the list<br>Last modified %s<br>Repo: %s",
-					numArticles,
-					time.Now().Format(dateFormat),
-					renderUnsafeAnchor("<code>codemicro/readingList</code>", "https://github.com/codemicro/readingList", false)(),
-				),
+	head := Div(
+		H1(g.Text(pageTitle)),
+		P(g.Raw(
+			fmt.Sprintf(
+				"A mostly complete list of articles I've read on the internet<br>There are currently %d entries in the list<br>Last modified %s<br>Repo: %s",
+				numArticles,
+				time.Now().Format(dateFormat),
+				"<a href=\"https://github.com/codemicro/readingList\" rel=\"noopener\"><code>codemicro/readingList</code></a>",
 			),
-		),
+		)),
 	)
 
-	listingHTML := makeListHTML(groupedEntries)
+	listing := makeListHTML(groupedEntries)
 
-	outputContent, err := renderHTMLPage(pageTitle, head(), listingHTML, "")
+	outputContent, err := renderHTMLPage(pageTitle, []g.Node{head, Hr(), listing})
 	if err != nil {
 		return err
 	}

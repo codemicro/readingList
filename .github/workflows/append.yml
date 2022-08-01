@@ -1,0 +1,33 @@
+name: Append article to reading list
+
+on:
+  repository_dispatch:
+    types: ["rl-append"]
+
+jobs:
+  append-to-reading-list:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.18
+
+      - name: Append to reading list
+        env:
+          RL_INPUT_JSON: ${{ toJSON(github.event.client_payload) }}
+        run: go run github.com/codemicro/readingList add
+
+      - name: Commit changes
+        run: |
+          git config user.name "Automatic update"
+          git config user.email "<>"
+          git add readingList.csv
+          git commit -m 'Add `${{ github.event.client_payload.Title }}` to reading list'
+          git push -u origin master

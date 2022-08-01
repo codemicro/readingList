@@ -4,6 +4,9 @@ on:
   repository_dispatch:
     types: ["rl-append"]
 
+concurrency:
+  group: append-to-reading-list
+
 jobs:
   append-to-reading-list:
     runs-on: ubuntu-latest

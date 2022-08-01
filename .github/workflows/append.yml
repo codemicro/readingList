@@ -33,5 +33,4 @@ jobs:
           git push -u origin master
 
   build-site:
-    runs-on: ubuntu-latest
     uses: ./.github/workflows/build.yml

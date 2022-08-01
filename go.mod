@@ -1,11 +1,17 @@
 module github.com/codemicro/readingList
 
-go 1.16
+go 1.18
 
 require (
+	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/jszwec/csvutil v1.5.0
 	github.com/maragudk/gomponents v0.18.0
-	github.com/schollz/progressbar/v3 v3.8.2
-	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
-	golang.org/x/sys v0.0.0-20210823070655-63515b42dcdf // indirect
+)
+
+require (
+	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/go-playground/locales v0.14.0 // indirect
+	github.com/go-playground/universal-translator v0.18.0 // indirect
+	github.com/leodido/go-urn v1.2.1 // indirect
+	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 )

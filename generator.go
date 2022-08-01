@@ -14,19 +14,9 @@ import (
 	g "github.com/maragudk/gomponents"
 	c "github.com/maragudk/gomponents/components"
 	. "github.com/maragudk/gomponents/html"
-	"github.com/schollz/progressbar/v3"
 )
 
 const dateFormat = "2006-01-02"
-
-type readingListEntry struct {
-	URL           string    `csv:"url,omitempty"`
-	Title         string    `csv:"title,omitempty"`
-	Description   string    `csv:"description,omitempty"`
-	Image         string    `csv:"image,omitempty"`
-	Date          time.Time `csv:"date,omitempty"`
-	HackerNewsURL string    `csv:"hnurl,omitempty"`
-}
 
 // renderHTMLPage renders a complete HTML page
 func renderHTMLPage(title string, body []g.Node) ([]byte, error) {
@@ -127,15 +117,11 @@ func makeListHTML(groups []*entryGroup) g.Node {
 		}))),
 	}
 
-	for groupNumber, group := range groups {
+	for _, group := range groups {
 
 		dateString := group.Title
 
 		header := headerLevel(g.Attr("id", group.ID), g.Text(dateString))
-
-		pb := progressbar.NewOptions(len(group.Entries),
-			progressbar.OptionSetDescription(fmt.Sprintf("[%d/%d] %s", groupNumber+1, numGroups, dateString)),
-		)
 
 		var entries []g.Node
 		for _, article := range group.Entries {
@@ -148,13 +134,10 @@ func makeListHTML(groups []*entryGroup) g.Node {
 				article.HackerNewsURL),
 			)
 
-			pb.Add(1)
 		}
 
 		parts = append(parts, header, Ul(entries...))
 	}
-
-	fmt.Println() // the progress bars do weird newline things
 
 	return Div(parts...)
 }
@@ -182,7 +165,6 @@ func articleLinkComponent(url, title, description, date, hnURL string) g.Node {
 func GenerateSite() error {
 
 	const outputDir = ".site"
-	const readingListFile = "readingList.csv"
 
 	// read CSV file
 	var entries []*readingListEntry
@@ -221,19 +203,7 @@ func GenerateSite() error {
 		return err
 	}
 
-	_ = os.Mkdir(".site", 0777)
-	// _ = os.Mkdir(".site/assets", 0777)
+	_ = os.Mkdir(outputDir, 0777)
 
-	// if err := CopyDirectory("./assets", "./.site/assets"); err != nil {
-	// 	return err
-	// }
-
-	return ioutil.WriteFile(".site/index.html", outputContent, 0644)
-}
-
-func main() {
-	if err := GenerateSite(); err != nil {
-		fmt.Fprintf(os.Stderr, "Unhandled error: %v\n", err)
-		os.Exit(1)
-	}
+	return ioutil.WriteFile(outputDir+"/index.html", outputContent, 0644)
 }

@@ -32,7 +32,7 @@ jobs:
           git config user.email "readinglistauto@tdpain.net"
           git config user.name "Automatic update"
           git add readingList.csv
-          git commit -m 'Add `${{ github.event.client_payload.Title }}` to reading list'
+          git commit -m "Automated reading list update on $(date)"
           git push -u origin master
 
   build-site:

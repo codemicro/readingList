@@ -31,3 +31,7 @@ jobs:
           git add readingList.csv
           git commit -m 'Add `${{ github.event.client_payload.Title }}` to reading list'
           git push -u origin master
+
+  build-site:
+    runs-on: ubuntu-latest
+    uses: ./.github/workflows/build.yml

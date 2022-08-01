@@ -9,8 +9,6 @@ concurrency:
 
 jobs:
   append-to-reading-list:
-    concurrency:
-      group: ${{ github.run_id }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -38,6 +36,5 @@ jobs:
           git push -u origin master
 
   build-site:
-    concurrency:
-      group: ${{ github.run_id }}
+    needs: append-to-reading-list
     uses: ./.github/workflows/build.yml

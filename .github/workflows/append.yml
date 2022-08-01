@@ -26,8 +26,6 @@ jobs:
 
       - name: Commit changes
         run: |
-          git config user.name "Automatic update"
-          git config user.email "<>"
           git add readingList.csv
-          git commit -m 'Add `${{ github.event.client_payload.Title }}` to reading list'
+          git commit -m 'Add `${{ github.event.client_payload.Title }}` to reading list' --author="Automatic update <noreply@example.com>"
           git push -u origin master

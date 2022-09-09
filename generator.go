@@ -191,7 +191,7 @@ func GenerateSite() error {
 				"A mostly complete list of articles I've read on the internet<br>There are currently %d entries in the list<br>Last modified %s<br>Repo: %s",
 				numArticles,
 				time.Now().Format(dateFormat),
-				"<a href=\"https://github.com/codemicro/readingList\" rel=\"noopener\"><code>codemicro/readingList</code></a>",
+				"<a href=\"https://github.com/zanshin/readingList\" rel=\"noopener\"><code>zanshin/readingList</code></a>",
 			),
 		)),
 	)

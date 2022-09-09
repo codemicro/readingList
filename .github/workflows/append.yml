@@ -25,7 +25,7 @@ jobs:
       - name: Append to reading list
         env:
           RL_INPUT_JSON: ${{ toJSON(github.event.client_payload) }}
-        run: go run github.com/codemicro/readingList add
+        run: go run github.com/zanshin/readingList add
 
       - name: Commit changes
         run: |

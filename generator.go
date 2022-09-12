@@ -188,7 +188,7 @@ func GenerateSite() error {
 		H1(g.Text(pageTitle)),
 		P(g.Raw(
 			fmt.Sprintf(
-				"A mostly complete list of articles I've read on the internet<br>There are currently %d entries in the list<br>Last modified %s<br>Repo: %s",
+				"A mostly complete list of articles I've read on the internet.<br>The articles on this list do not necessarily represent my views or opinions and should not be construed as representative of my opinions.<br>There are currently %d entries in the list<br>Last modified %s<br>Repo: %s",
 				numArticles,
 				time.Now().Format(dateFormat),
 				"<a href=\"https://github.com/codemicro/readingList\" rel=\"noopener\"><code>codemicro/readingList</code></a>",

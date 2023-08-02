@@ -30,9 +30,9 @@ jobs:
       - name: Run generator
         run: go run github.com/codemicro/readingList generateSite
 
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v1.1.0
-        env:
-          PUBLISH_DIR: .site
-          PUBLISH_BRANCH: gh-pages
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Generate deploy artefact
+        run: zip -r ../site.zip *
+        
+      - name: Publish site
+        run: "curl -X POST -u palmatum-service:${{ secrets.ACCESS_TOKEN }} -F siteName=readingList -F archive=@site.zip https://pages.tdpain.net/-/upload
+"

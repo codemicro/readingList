@@ -32,6 +32,7 @@ jobs:
 
       - name: Generate deploy artefact
         run: zip -r ../site.zip *
+        working-directory: .site
         
       - name: Publish site
         run: "curl -X POST -u palmatum-service:${{ secrets.ACCESS_TOKEN }} -F siteName=readingList -F archive=@site.zip https://pages.tdpain.net/-/upload

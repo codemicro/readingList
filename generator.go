@@ -24,7 +24,7 @@ func renderHTMLPage(title string, body []g.Node) ([]byte, error) {
 	err := c.HTML5(c.HTML5Props{
 		Title:    title,
 		Language: "en-GB",
-		Head:     []g.Node{Link(g.Attr("rel", "stylesheet"), g.Attr("href", "/readingList/ghpages.css"), g.Attr("type", "text/css"))},
+		Head:     []g.Node{Link(g.Attr("rel", "stylesheet"), g.Attr("href", "ghpages.css"), g.Attr("type", "text/css"))},
 		Body:     []g.Node{Div(g.Attr("class", "container"), g.Group(body))},
 	}).Render(b)
 	if err != nil {

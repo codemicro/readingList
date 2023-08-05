@@ -38,5 +38,4 @@ jobs:
   build-site:
     needs: append-to-reading-list
     uses: ./.github/workflows/build-deploy.yml
-    secrets:
-      ACCESS_TOKEN: "${{ secrets.ACCESS_TOKEN }}"
+    secrets: inherit

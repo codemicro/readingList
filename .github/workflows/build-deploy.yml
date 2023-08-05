@@ -9,11 +9,11 @@ on:
     - "generator.go"
 
 concurrency:
-  group: deploy-to-ghpages
+  group: build-deploy
   cancel-in-progress: true
 
 jobs:
-  build-site:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -30,6 +30,10 @@ jobs:
       - name: Run generator
         run: go run github.com/codemicro/readingList generateSite
 
+  deploy:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:  
       - name: Generate deploy artefact
         run: zip -r ../site.zip *
         working-directory: .site

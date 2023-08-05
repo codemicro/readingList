@@ -31,7 +31,7 @@ jobs:
         run: go run github.com/codemicro/readingList generateSite
 
   deploy:
-    needs: deploy
+    needs: build
     runs-on: ubuntu-latest
     steps:  
       - name: Generate deploy artefact

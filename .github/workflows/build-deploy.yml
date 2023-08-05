@@ -1,4 +1,4 @@
-name: Build site
+name: Build and deploy site
 
 on:
   workflow_dispatch:
@@ -8,7 +8,7 @@ on:
     - "readingList.csv"
     - "generator.go"
 
-concurrency: # Prevent two instances of this running at once
+concurrency:
   group: deploy-to-ghpages
   cancel-in-progress: true
 

@@ -30,13 +30,25 @@ jobs:
       - name: Run generator
         run: go run github.com/codemicro/readingList generateSite
 
+      - name: Upload arfefact
+        uses: actions/upload-artifact@v3
+        with:
+          name: built-site
+          path: .site
+          retention-days: 1
+
   deploy:
     needs: build
     runs-on: ubuntu-latest
     steps:  
-      - name: Generate deploy artefact
-        run: zip -r ../site.zip *
-        working-directory: .site
+      - uses: actions/download-artifact@v3
+        with:
+          name: built-site
+          path: site
+
+      - name: Generate deploy bundle
+        run: zip -r ../deploy-bundle.zip *
+        working-directory: site
         
       - name: Publish site
-        run: "curl -Lf -X POST -u palmatum-service:${{ secrets.ACCESS_TOKEN }} -F siteName=readingList -F archive=@site.zip https://pages.tdpain.net/-/upload"
+        run: "curl -Lf -X POST -u palmatum-service:${{ secrets.ACCESS_TOKEN }} -F siteName=readingList -F archive=@deploy-bundle.zip https://pages.tdpain.net/-/upload"

@@ -6,7 +6,7 @@ on:
   push:
     paths:
     - "readingList.csv"
-    - "generator.go"
+    - "cli/generator.go"
 
 concurrency:
   group: build-deploy
@@ -28,7 +28,7 @@ jobs:
           go-version: 1
 
       - name: Run generator
-        run: go run github.com/codemicro/readingList generateSite
+        run: go run github.com/codemicro/readingList/cli generateSite
 
       - name: Upload arfefact
         uses: actions/upload-artifact@v3

@@ -7,7 +7,13 @@ import (
 	"time"
 )
 
-const readingListFile = "readingList.csv"
+var readingListFile = "readingList.csv"
+
+func init() {
+	if v := os.Getenv("RL_CSV_FILE"); v != "" {
+		readingListFile = v
+	}
+}
 
 type readingListEntry struct {
 	URL           string    `csv:"url,omitempty"`

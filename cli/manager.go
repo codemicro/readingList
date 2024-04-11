@@ -10,12 +10,23 @@ import (
 	"strings"
 	"time"
 
-	"github.com/codemicro/readingList/transport"
+	"github.com/go-playground/validator"
 	"github.com/jszwec/csvutil"
 )
 
+type inputs struct {
+	URL         string `validate:"required,url"`
+	Title       string `validate:"required"`
+	Description string
+	Image       string
+}
+
+func (i *inputs) Validate() error {
+	return validator.New().Struct(i)
+}
+
 func AddRowToCSV() error {
-	data := new(transport.Inputs)
+	data := new(inputs)
 	if err := loadInputs(data); err != nil {
 		return err
 	}

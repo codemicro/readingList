@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -18,7 +19,7 @@ func init() {
 	}
 
 	if v := os.Getenv("RL_OUTPUT_DIR"); v != "" {
-		siteOutputDir = v
+		siteOutputDir = strings.TrimSuffix(v, "/")
 	}
 }
 

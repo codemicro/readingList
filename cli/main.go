@@ -7,11 +7,18 @@ import (
 	"time"
 )
 
-var readingListFile = "readingList.csv"
+var (
+	readingListFile = "readingList.csv"
+	siteOutputDir = "_dist"
+)
 
 func init() {
 	if v := os.Getenv("RL_CSV_FILE"); v != "" {
 		readingListFile = v
+	}
+
+	if v := os.Getenv("RL_OUTPUT_DIR"); v != "" {
+		siteOutputDir = v
 	}
 }
 

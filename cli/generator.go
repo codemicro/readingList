@@ -2,8 +2,10 @@ package main
 
 import (
 	"bytes"
+	"embed"
 	_ "embed"
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"os"
 	"sort"
@@ -162,11 +164,10 @@ func articleLinkComponent(url, title, description, date, hnURL string) g.Node {
 	)
 }
 
+//go:embed static
+var staticSiteResources embed.FS
+
 func GenerateSite() error {
-
-	const outputDir = ".site"
-
-	// read CSV file
 	var entries []*readingListEntry
 
 	fcont, err := ioutil.ReadFile(readingListFile)
@@ -203,7 +204,28 @@ func GenerateSite() error {
 		return err
 	}
 
-	_ = os.Mkdir(outputDir, 0777)
+	if err := fs.WalkDir(fs.FS(staticSiteResources), "static", func(inputPath string, d fs.DirEntry, err error) error {
+		outputPath := siteOutputDir + inputPath[len("static"):]
 
-	return ioutil.WriteFile(outputDir+"/index.html", outputContent, 0644)
+		fmt.Println(inputPath, outputPath)
+
+		if err != nil {
+			return err
+		}
+
+		if d.IsDir() {
+			return os.MkdirAll(outputPath, 0777)
+		}
+
+		data, err := staticSiteResources.ReadFile(inputPath)
+		if err != nil {
+			return err
+		}
+
+		return os.WriteFile(outputPath, data, 0644)
+	}); err != nil {
+		return err
+	}
+
+	return ioutil.WriteFile(siteOutputDir+"/index.html", outputContent, 0644)
 }

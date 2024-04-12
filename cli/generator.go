@@ -207,8 +207,6 @@ func GenerateSite() error {
 	if err := fs.WalkDir(fs.FS(staticSiteResources), "static", func(inputPath string, d fs.DirEntry, err error) error {
 		outputPath := siteOutputDir + inputPath[len("static"):]
 
-		fmt.Println(inputPath, outputPath)
-
 		if err != nil {
 			return err
 		}

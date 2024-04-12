@@ -34,7 +34,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: built-site
-          path: .site
+          path: _dist
           retention-days: 1
 
   deploy:

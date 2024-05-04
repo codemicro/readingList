@@ -10,7 +10,7 @@ stages:
   - deploy
 
 default:
-  image: golang:1
+  image: golang:1-bookworm
 
 
 appendItem:
@@ -41,6 +41,7 @@ deploySite:
     - job: buildSite
       artifacts: true
   before_script:
+    - apt-get update
     - apt-get install -y zip
   script:
     - (cd _dist && zip -r ../deploy-bundle.zip *)

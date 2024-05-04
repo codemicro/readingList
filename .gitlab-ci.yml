@@ -23,7 +23,7 @@ appendItem:
     - git config user.email "readinglistauto@akpain.net" && git config user.name "Automatic update"
     - git switch master
     - git commit -am "Automatic reading list update"
-    - git push -u origin master
+    - git push -o ci.skip -u origin master https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git
 
 buildSite:
   stage: build
@@ -33,7 +33,6 @@ buildSite:
     paths:
       - _dist/
     expire_in: 1 day
-
 
 deploySite:
   stage: deploy

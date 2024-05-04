@@ -1,0 +1,45 @@
+workflow:
+  auto_cancel:
+    on_new_commit: conservative
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+
+stages:
+  - append
+  - build
+  - deploy
+
+default:
+  image: golang:1
+
+
+appendItem:
+  stage: append
+  interruptible: true
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "api" && $RL_INPUT_JSON'
+  script:
+    - go run github.com/codemicro/readingList/cli add
+    - git config user.email "readinglistauto@akpain.net" && git config user.name "Automatic update"
+    - git commit -am "Automatic reading list update"
+    - git push -u origin master
+
+buildSite:
+  stage: build
+  interruptible: true
+  script: go run github.com/codemicro/readingList/cli generateSite
+  artifacts:
+    paths:
+      - _dist/
+    expire_in: 1 day
+
+
+deploySite:
+  stage: deploy
+  interruptible: false
+  needs:
+    - job: buildSite
+      artifacts: true
+  script:
+    - (cd _dist && zip -r ../deploy-bundle.zip *)
+    - curl -Lf -X POST -u palmatum-service:$PALMATUM_TOKEN -F siteName=readingList -F archive=@deploy-bundle.zip https://pages.tdpain.net/-/upload

@@ -40,6 +40,8 @@ deploySite:
   needs:
     - job: buildSite
       artifacts: true
+  before_script:
+    - apt-get install -y zip
   script:
     - (cd _dist && zip -r ../deploy-bundle.zip *)
     - curl -Lf -X POST -u palmatum-service:$PALMATUM_TOKEN -F siteName=readingList -F archive=@deploy-bundle.zip https://pages.tdpain.net/-/upload

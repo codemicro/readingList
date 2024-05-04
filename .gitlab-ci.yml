@@ -21,7 +21,6 @@ appendItem:
   script:
     - go run github.com/codemicro/readingList/cli add
     - git config user.email "readinglistauto@akpain.net" && git config user.name "Automatic update"
-    - git switch master
     - git commit -am "Automatic reading list update"
     - git push -o ci.skip -u https://gitlab-ci-token:${PUSHBACK_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git master
 

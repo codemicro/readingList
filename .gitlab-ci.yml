@@ -19,7 +19,7 @@ appendItem:
   rules:
     - if: '$CI_PIPELINE_SOURCE == "api" && $RL_INPUT_JSON'
   before_script:
-    - git switch main
+    - git switch masdter
     - git config user.email "readinglistauto@akpain.net" && git config user.name "Automatic update"
   script:
     - go run github.com/codemicro/readingList/cli add

@@ -1,0 +1,166 @@
+html {
+  border: 4px solid #356df2;
+  min-height: calc(100% - 8px);
+  /* so the page extends to the bottom of the screen take border if the content isn't a page in length or more, else follows it to the bottom */
+}
+
+body {
+  font-family: sans-serif;
+  background-color: #eff1f4;
+  color: #161c2b;
+  margin-bottom: 10px;
+}
+
+.container {
+  width: 50%;
+  margin: 0 auto;
+}
+@media screen and (max-width: 800px) {
+  .container {
+    width: 98%;
+  }
+}
+@media screen and (max-width: 1000px) and (min-width: 801px) {
+  .container {
+    width: 90%;
+  }
+}
+
+ul {
+  list-style: none;
+}
+ul li:first-of-type {
+  padding-top: unset;
+}
+ul li::before {
+  content: "-";
+}
+
+ol li:first-of-type {
+  padding-top: unset;
+}
+
+li {
+  /* 
+  Add padding to the top of every list item to make them a little more spaced
+  out. Don't add this padding to the first item in a top level list. Do add it
+  to the first item in every not-top-level list (ie a ul/ol inside of an li)
+  */
+  padding-top: 5px;
+}
+li ul li, li ol li {
+  padding-top: 5px !important;
+  /* people who know what they're doing hate her for this one simple trick! */
+}
+li::before, li::after {
+  color: #356df2;
+  display: inline-block;
+  width: 1.5em;
+  margin-left: -1.5em;
+}
+li::marker {
+  color: #356df2;
+}
+
+.title {
+  color: #356df2;
+}
+
+.secondary {
+  font-style: italic;
+  color: rgba(22, 28, 43, 0.5);
+}
+
+hr {
+  border: 1px dashed #356df2;
+  margin-top: 12px;
+}
+hr.secondary {
+  border: 3px dotted rgba(22, 28, 43, 0.5);
+}
+
+a:link, a:visited {
+  color: #356df2;
+  text-decoration-style: solid;
+}
+a:hover {
+  color: #356df2;
+  filter: brightness(0.8);
+}
+
+code {
+  font-family: monospace;
+  padding: 1px;
+  background: rgba(53, 109, 242, 0.2);
+  color: #356df2;
+}
+
+/* Tables */
+table {
+  width: 90%;
+  margin-left: auto;
+  margin-right: auto;
+}
+table tr th, table tr td {
+  text-align: center;
+}
+table tr th {
+  /* Give table headers some background colour */
+  background-color: rgba(53, 109, 242, 0.2);
+}
+table tr:hover {
+  /* 
+  Give table rows some background colour when hovered over
+  Since $accent-marker has opacity, this will cause th elements to combine and give a stronger background colour.
+  */
+  background-color: rgba(53, 109, 242, 0.2);
+}
+
+/* Pride flag */
+h1 img.prideflag {
+  height: 1em;
+  transform: translate(0px, 25%) rotate(15deg);
+}
+
+/* blockquote styling (mainly for blogs) */
+blockquote {
+  font-style: italic;
+  padding: 1px 10px;
+  border-left: 3px solid #356df2;
+  background-color: rgba(53, 109, 242, 0.2);
+}
+
+/* full code blocks */
+pre {
+  background: rgba(53, 109, 242, 0.2);
+  color: #356df2;
+  padding: 5px;
+}
+pre code {
+  /* undo inline code styling */
+  background: none;
+}
+
+/* images */
+img.border {
+  border: 1px solid #161c2b;
+}
+
+.mdcontent img, .image {
+  border: 1px solid #161c2b;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 60%;
+}
+
+.image.noborder {
+  border: none;
+}
+
+/* text */
+.text-larger {
+  font-size: 1.2rem;
+}
+
+/*# sourceMappingURL=ghpages.css.map */

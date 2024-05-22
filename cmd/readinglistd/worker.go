@@ -19,11 +19,11 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-func RunWorker(db *sqlx.DB, c chan *models.NewArticle, palmatumAuth string) {
-	go worker(db, c, palmatumAuth)
+func RunWorker(db *sqlx.DB, c chan *models.NewArticle, palmatumAuth string, siteName string) {
+	go worker(db, c, palmatumAuth, siteName)
 }
 
-func worker(db *sqlx.DB, c chan *models.NewArticle, palmatumAuth string) {
+func worker(db *sqlx.DB, c chan *models.NewArticle, palmatumAuth string, siteName string) {
 	var newArticle *models.NewArticle
 	for {
 		newArticle = <-c
@@ -77,7 +77,7 @@ func worker(db *sqlx.DB, c chan *models.NewArticle, palmatumAuth string) {
 
 		_ = os.RemoveAll(sitePath)
 
-		if err := uploadSite(palmatumAuth, siteZipFile); err != nil {
+		if err := uploadSite(palmatumAuth, siteName, siteZipFile); err != nil {
 			slog.Error("unable to upload site to palmatum", "error", err)
 		}
 	}
@@ -159,11 +159,11 @@ func packageSite(sitePath string) (*bytes.Buffer, error) {
 	return buffer, nil
 }
 
-func uploadSite(palmatumAuth string, reader io.Reader) error {
+func uploadSite(palmatumAuth string, siteName string, reader io.Reader) error {
 	bodyBuffer := new(bytes.Buffer)
 	mpWriter := multipart.NewWriter(bodyBuffer)
 
-	if err := mpWriter.WriteField("siteName", "readingListBETA"); err != nil {
+	if err := mpWriter.WriteField("siteName", siteName); err != nil {
 		return fmt.Errorf("write field to multipart: %w", err)
 	}
 

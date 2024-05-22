@@ -14,12 +14,16 @@ import (
 
 func HTTPListen(addr string, token string, newArticleChan chan *models.NewArticle) error {
 	slog.Info("starting HTTP server", "address", addr)
-	return http.ListenAndServe(addr, http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+
+	mux := http.NewServeMux()
+	mux.Handle("POST /newarticle", http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if err := httpHandler(rw, req, token, newArticleChan); err != nil {
 			slog.Error("error in HTTP handler", "error", err, "request", req)
 			rw.WriteHeader(http.StatusInternalServerError)
 		}
 	}))
+
+	return http.ListenAndServe(addr, mux)
 }
 
 func httpHandler(rw http.ResponseWriter, req *http.Request, token string, newArticleChan chan *models.NewArticle) error {

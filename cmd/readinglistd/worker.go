@@ -188,7 +188,9 @@ func uploadSite(palmatumAuth string, siteName string, reader io.Reader) error {
 	req.Header.Set("Content-Type", mpWriter.FormDataContentType())
 	req.Header.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(palmatumAuth)))
 
-	resp, err := new(http.Client).Do(req)
+	resp, err := (&http.Client{
+		Timeout: time.Second * 10,
+	}).Do(req)
 	if err != nil {
 		return fmt.Errorf("do http request: %w", err)
 	}

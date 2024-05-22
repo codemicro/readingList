@@ -21,6 +21,8 @@ github.com/leodido/go-urn v1.2.1/go.mod h1:zt4jvISO2HfUBqxjfIshjdMTYS56ZS/qv49ic
 github.com/lib/pq v1.10.9/go.mod h1:AlVN5x4E4T544tWzH6hKfbfQvm3HdbOxrmggDNAPY9o=
 github.com/maragudk/gomponents v0.18.0 h1:EcdeRUWsWW6hK9ftnGAoyXR00SQWecCBxuXghQvdEcc=
 github.com/maragudk/gomponents v0.18.0/go.mod h1:0OdlqOoqxcwvhBFrp8wlKHnEXhNB7IVhb8GuARmd+tI=
+github.com/maragudk/gomponents v0.20.2 h1:39FhnBNNCJzqNcD9Hmvp/5xj0otweFoyvVgFG6kXoy0=
+github.com/maragudk/gomponents v0.20.2/go.mod h1:nHkNnZL6ODgMBeJhrZjkMHVvNdoYsfmpKB2/hjdQ0Hg=
 github.com/mattn/go-sqlite3 v1.14.22 h1:2gZY6PC6kBnID23Tichd1K+Z0oS6nE/XwU+Vz/5o4kU=
 github.com/mattn/go-sqlite3 v1.14.22/go.mod h1:Uh1q+B4BYcTPb+yiD3kU8Ct7aC0hY9fxUwlHK0RXw+Y=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=

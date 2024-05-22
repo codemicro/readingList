@@ -56,5 +56,7 @@ func httpHandler(rw http.ResponseWriter, req *http.Request, token string, newArt
 	}
 
 	newArticleChan <- requestData
+
+	rw.WriteHeader(http.StatusNoContent)
 	return nil
 }

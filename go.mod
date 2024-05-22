@@ -5,7 +5,7 @@ go 1.22
 require (
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/jszwec/csvutil v1.5.0
-	github.com/maragudk/gomponents v0.18.0
+	github.com/maragudk/gomponents v0.20.2
 )
 
 require (

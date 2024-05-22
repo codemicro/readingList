@@ -16,7 +16,7 @@ func HTTPListen(addr string, token string, newArticleChan chan *models.NewArticl
 	slog.Info("starting HTTP server", "address", addr)
 
 	mux := http.NewServeMux()
-	mux.Handle("POST /newarticle", http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+	mux.Handle("POST /ingest", http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if err := httpHandler(rw, req, token, newArticleChan); err != nil {
 			slog.Error("error in HTTP handler", "error", err, "request", req)
 			rw.WriteHeader(http.StatusInternalServerError)

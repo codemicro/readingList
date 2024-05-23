@@ -25,6 +25,7 @@ func RunWorker(db *sqlx.DB, c chan *models.NewArticle, palmatumAuth string, site
 
 func worker(db *sqlx.DB, c chan *models.NewArticle, palmatumAuth string, siteName string) {
 	var newArticle *models.NewArticle
+rootLoop:
 	for {
 		newArticle = <-c
 	loop:
@@ -32,6 +33,16 @@ func worker(db *sqlx.DB, c chan *models.NewArticle, palmatumAuth string, siteNam
 			article := &models.Article{
 				NewArticle: *newArticle,
 				ID:         uuid.New(),
+			}
+
+			{ // remove fragment
+				parsed, err := url.Parse(article.URL)
+				if err != nil {
+					slog.Error("invalud URL supplied to worker", "url", article.URL)
+					continue rootLoop
+				}
+				parsed.Fragment = ""
+				article.URL = parsed.String()
 			}
 
 			hnURL, err := queryHackerNews(article.URL)

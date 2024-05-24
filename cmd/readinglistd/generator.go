@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/codemicro/readingList/models"
+	"git.tdpain.netcodemicro/readingList/models"
 	g "github.com/maragudk/gomponents"
 	c "github.com/maragudk/gomponents/components"
 	. "github.com/maragudk/gomponents/html"

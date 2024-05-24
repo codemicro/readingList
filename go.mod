@@ -1,4 +1,4 @@
-module github.com/codemicro/readingList
+module git.tdpain.netcodemicro/readingList
 
 go 1.22
 

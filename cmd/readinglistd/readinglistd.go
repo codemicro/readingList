@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/codemicro/readingList/models"
+	"git.tdpain.netcodemicro/readingList/models"
 )
 
 func main() {

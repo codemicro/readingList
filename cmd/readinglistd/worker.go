@@ -14,7 +14,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/codemicro/readingList/models"
+	"git.tdpain.netcodemicro/readingList/models"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 )

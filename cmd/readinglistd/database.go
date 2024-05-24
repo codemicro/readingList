@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"git.tdpain.netcodemicro/readingList/models"
+	"git.tdpain.net/codemicro/readingList/models"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 )

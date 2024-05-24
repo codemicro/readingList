@@ -8,7 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"git.tdpain.netcodemicro/readingList/models"
+	"git.tdpain.net/codemicro/readingList/models"
 	"github.com/go-playground/validator"
 )
 

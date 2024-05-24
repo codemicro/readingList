@@ -7,7 +7,7 @@ import (
 	"crypto/subtle"
 	"encoding/json"
 	"errors"
-	"git.tdpain.netcodemicro/readingList/models"
+	"git.tdpain.net/codemicro/readingList/models"
 	"github.com/go-playground/validator"
 	g "github.com/maragudk/gomponents"
 	. "github.com/maragudk/gomponents/html"

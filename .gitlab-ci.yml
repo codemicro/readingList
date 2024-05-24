@@ -1,53 +1,30 @@
 workflow:
-  auto_cancel:
-    on_new_commit: conservative
   rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
+    - if: '$CI_COMMIT_BRANCH = "build"'
 
 stages:
-  - append
   - build
-  - deploy
 
 default:
-  image: golang:1-bookworm
-
-
-appendItem:
-  stage: append
-  interruptible: true
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "api" && $RL_INPUT_JSON'
+  image: docker
+  services:
+    - docker:dind
   before_script:
-    - git switch master
-    - git config user.email "readinglistauto@akpain.net" && git config user.name "Automatic update"
-  script:
-    - go run github.com/codemicro/readingList/cli add
-    - git commit -am "Automatic reading list update"
-    - git push -u https://gitlab-ci-token:${PUSHBACK_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git master
+    - "echo $CI_REGISTRY_PASSWORD | docker login $CI_REGISTRY --username $CI_REGISTRY_USER --password-stdin"
+    - "docker info"
 
-buildSite:
+httpingest:
   stage: build
-  interruptible: true
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "push"'
-  script: go run github.com/codemicro/readingList/cli generateSite
-  artifacts:
-    paths:
-      - _dist/
-    expire_in: 1 day
-
-deploySite:
-  stage: deploy
-  interruptible: false
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "push"'
-  needs:
-    - job: buildSite
-      artifacts: true
-  before_script:
-    - apt-get update
-    - apt-get install -y zip
+  variables:
+    IMAGE_NAME: "${CI_REGISTRY_IMAGE}/httpingest"
   script:
-    - (cd _dist && zip -r ../deploy-bundle.zip *)
-    - curl -Lf -X POST -u palmatum-service:$PALMATUM_TOKEN -F siteName=readingList -F archive=@deploy-bundle.zip https://pages.tdpain.net/-/upload
+    - "docker build . --file cmd/httpingest/Dockerfile --tag ${IMAGE_NAME}:latest --tag ${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA#'v'}" # that weird thing #'v' thing strips a prefix of v
+    - "docker push --all-tags $IMAGE_NAME"
+
+readinglistd:
+  stage: build
+  variables:
+    IMAGE_NAME: "${CI_REGISTRY_IMAGE}/readinglistd"
+  script:
+    - "docker build . --file cmd/readinglistd/Dockerfile --tag ${IMAGE_NAME}:latest --tag ${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA#'v'}" # that weird thing #'v' thing strips a prefix of v
+    - "docker push --all-tags $IMAGE_NAME"

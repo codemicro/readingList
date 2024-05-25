@@ -4,7 +4,7 @@ RUN mkdir /build
 ADD . /build/
 WORKDIR /build
 
-RUN CGO_ENABLED=1 GOOS=linux go build -a -buildvcs=false -installsuffix cgo -ldflags "-extldflags '-static'" -o main git.tdpain.net/codemicro/readingList/cmd/httpingest
+RUN CGO_ENABLED=0 GOOS=linux go build -a -buildvcs=false -installsuffix cgo -ldflags "-extldflags '-static'" -o main git.tdpain.net/codemicro/readingList/cmd/httpingest
 
 FROM scratch
 

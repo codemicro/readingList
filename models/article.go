@@ -8,7 +8,7 @@ import (
 type NewArticle struct {
 	URL           string `validate:"required,url"`
 	Title         string `validate:"required"`
-	Description   string `db:"nullzero"`
+	Description   string `db:"description,nullzero"`
 	ImageURL      string `db:"image_url,nullzero"`
 	Date          time.Time `validate:"required"`
 }

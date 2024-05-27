@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"sync"
 	"time"
 
 	"git.tdpain.net/codemicro/readingList/models"
@@ -133,7 +134,12 @@ func queryHackerNews(queryURL string) (string, error) {
 	return fmt.Sprintf("https://news.ycombinator.com/item?id=%s", targetSubmission.ObjectID), nil
 }
 
+var siteGenerationLock sync.Mutex
+
 func doSiteGeneration(db *sqlx.DB, conf *config) error {
+	siteGenerationLock.Lock()
+	defer siteGenerationLock.Unlock()
+
 	allArticles, err := GetAllArticles(db)
 	if err != nil {
 		return fmt.Errorf("unable to fetch all articles: %w", err)

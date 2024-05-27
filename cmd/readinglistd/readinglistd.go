@@ -43,7 +43,7 @@ func run() error {
 
 	newArticleChan := make(chan *models.NewArticle, 5)
 	RunWorker(db, newArticleChan, conf)
-	return HTTPListen(conf, newArticleChan)
+	return HTTPListen(db, conf, newArticleChan)
 }
 
 type config struct {

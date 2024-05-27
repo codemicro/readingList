@@ -4,6 +4,7 @@ import (
 	"crypto/subtle"
 	"encoding/json"
 	"fmt"
+	"github.com/jmoiron/sqlx"
 	"io"
 	"log/slog"
 	"net/http"
@@ -12,13 +13,19 @@ import (
 	"github.com/go-playground/validator"
 )
 
-func HTTPListen(conf *config, newArticleChan chan *models.NewArticle) error {
+func HTTPListen(db *sqlx.DB, conf *config, newArticleChan chan *models.NewArticle) error {
 	slog.Info("starting HTTP server", "address", conf.HTTPAddress)
 
 	mux := http.NewServeMux()
 	mux.Handle("POST /ingest", http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		if err := httpHandler(rw, req, conf.Token, newArticleChan); err != nil {
-			slog.Error("error in HTTP handler", "error", err, "request", req)
+		if err := ingestHandler(rw, req, conf, newArticleChan); err != nil {
+			slog.Error("error in ingest HTTP handler", "error", err, "request", req)
+			rw.WriteHeader(http.StatusInternalServerError)
+		}
+	}))
+	mux.Handle("POST /generate", http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		if err := generateHandler(rw, req, conf, db); err != nil {
+			slog.Error("error in generate HTTP handler", "error", err, "request", req)
 			rw.WriteHeader(http.StatusInternalServerError)
 		}
 	}))
@@ -26,13 +33,13 @@ func HTTPListen(conf *config, newArticleChan chan *models.NewArticle) error {
 	return http.ListenAndServe(conf.HTTPAddress, mux)
 }
 
-func httpHandler(rw http.ResponseWriter, req *http.Request, token string, newArticleChan chan *models.NewArticle) error {
+func ingestHandler(rw http.ResponseWriter, req *http.Request, conf *config, newArticleChan chan *models.NewArticle) error {
 	if req.Method != http.MethodPost {
 		rw.WriteHeader(http.StatusMethodNotAllowed)
 		return nil
 	}
 
-	if subtle.ConstantTimeCompare([]byte("Bearer "+token), []byte(req.Header.Get("Authorization"))) == 0 {
+	if subtle.ConstantTimeCompare([]byte("Bearer "+conf.Token), []byte(req.Header.Get("Authorization"))) == 0 {
 		rw.WriteHeader(http.StatusUnauthorized)
 		return nil
 	}
@@ -58,5 +65,13 @@ func httpHandler(rw http.ResponseWriter, req *http.Request, token string, newArt
 	newArticleChan <- requestData
 
 	rw.WriteHeader(http.StatusNoContent)
+	return nil
+}
+
+func generateHandler(rw http.ResponseWriter, req *http.Request, conf *config, db *sqlx.DB) error {
+	if err := doSiteGeneration(db, conf); err != nil {
+		return err
+	}
+	rw.WriteHeader(204)
 	return nil
 }

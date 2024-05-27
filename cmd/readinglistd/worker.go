@@ -50,8 +50,12 @@ rootLoop:
 			if err != nil {
 				slog.Warn("unable to query hacker news", "error", err, "article", article)
 			}
-
 			article.HackerNewsURL = hnURL
+
+			if len(article.Description) > 500 {
+				article.Description = article.Description[:500] + " [trimmed]"
+			}
+
 			if err := InsertArticle(db, article); err != nil {
 				slog.Error("unable to insert article", "error", err, "article", article)
 				break

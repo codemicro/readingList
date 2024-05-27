@@ -16,13 +16,7 @@ func main() {
 }
 
 func run() error {
-	var conf = struct {
-		Token                  string
-		HTTPAddress            string
-		DatabaseFilename       string
-		PalmatumAuthentication string
-		SiteName               string
-	}{
+	var conf = &config{
 		Token:                  os.Getenv("READINGLISTD_INGEST_TOKEN"),
 		HTTPAddress:            cmp.Or(os.Getenv("READINGLISTD_HTTP_ADDR"), ":9231"),
 		DatabaseFilename:       cmp.Or(os.Getenv("READINGLISTD_DATABASE_FILENAME"), "readinglist.sqlite3.db"),
@@ -48,6 +42,14 @@ func run() error {
 	}
 
 	newArticleChan := make(chan *models.NewArticle, 5)
-	RunWorker(db, newArticleChan, conf.PalmatumAuthentication, conf.SiteName)
-	return HTTPListen(conf.HTTPAddress, conf.Token, newArticleChan)
+	RunWorker(db, newArticleChan, conf)
+	return HTTPListen(conf, newArticleChan)
+}
+
+type config struct {
+	Token                  string
+	HTTPAddress            string
+	DatabaseFilename       string
+	PalmatumAuthentication string
+	SiteName               string
 }

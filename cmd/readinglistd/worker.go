@@ -19,11 +19,11 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-func RunWorker(db *sqlx.DB, c chan *models.NewArticle, palmatumAuth string, siteName string) {
-	go worker(db, c, palmatumAuth, siteName)
+func RunWorker(db *sqlx.DB, c chan *models.NewArticle, conf *config) {
+	go worker(db, c, conf)
 }
 
-func worker(db *sqlx.DB, c chan *models.NewArticle, palmatumAuth string, siteName string) {
+func worker(db *sqlx.DB, c chan *models.NewArticle, conf *config) {
 	var newArticle *models.NewArticle
 rootLoop:
 	for {
@@ -68,28 +68,9 @@ rootLoop:
 			}
 		}
 
-		allArticles, err := GetAllArticles(db)
-		if err != nil {
-			slog.Error("unable to fetch all articles", "error", err)
+		if err := doSiteGeneration(db, conf); err != nil {
+			slog.Error("error while executing site generation", "error", err)
 			continue
-		}
-
-		sitePath, err := GenerateSite(allArticles)
-		if err != nil {
-			slog.Error("unable to generate site", "error", err)
-			continue
-		}
-
-		siteZipFile, err := packageSite(sitePath)
-		if err != nil {
-			slog.Error("unable to package site", "error", err)
-			continue
-		}
-
-		_ = os.RemoveAll(sitePath)
-
-		if err := uploadSite(palmatumAuth, siteName, siteZipFile); err != nil {
-			slog.Error("unable to upload site to palmatum", "error", err)
 		}
 	}
 }
@@ -152,6 +133,31 @@ func queryHackerNews(queryURL string) (string, error) {
 	return fmt.Sprintf("https://news.ycombinator.com/item?id=%s", targetSubmission.ObjectID), nil
 }
 
+func doSiteGeneration(db *sqlx.DB, conf *config) error {
+	allArticles, err := GetAllArticles(db)
+	if err != nil {
+		return fmt.Errorf("unable to fetch all articles: %w", err)
+	}
+
+	sitePath, err := GenerateSite(allArticles)
+	if err != nil {
+		return fmt.Errorf("unable to generate site: %w", err)
+	}
+
+	siteZipFile, err := packageSite(sitePath)
+	if err != nil {
+		return fmt.Errorf("unable to package site: %w", err)
+	}
+
+	_ = os.RemoveAll(sitePath)
+
+	if err := uploadSite(conf, siteZipFile); err != nil {
+		return fmt.Errorf("unable to upload site to palmatum: %w", err)
+	}
+
+	return nil
+}
+
 func packageSite(sitePath string) (*bytes.Buffer, error) {
 	dfs := os.DirFS(sitePath)
 	buffer := new(bytes.Buffer)
@@ -170,11 +176,11 @@ func packageSite(sitePath string) (*bytes.Buffer, error) {
 	return buffer, nil
 }
 
-func uploadSite(palmatumAuth string, siteName string, reader io.Reader) error {
+func uploadSite(conf *config, reader io.Reader) error {
 	bodyBuffer := new(bytes.Buffer)
 	mpWriter := multipart.NewWriter(bodyBuffer)
 
-	if err := mpWriter.WriteField("siteName", siteName); err != nil {
+	if err := mpWriter.WriteField("siteName", conf.SiteName); err != nil {
 		return fmt.Errorf("write field to multipart: %w", err)
 	}
 
@@ -197,7 +203,7 @@ func uploadSite(palmatumAuth string, siteName string, reader io.Reader) error {
 	}
 
 	req.Header.Set("Content-Type", mpWriter.FormDataContentType())
-	req.Header.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(palmatumAuth)))
+	req.Header.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(conf.PalmatumAuthentication)))
 
 	resp, err := (&http.Client{
 		Timeout: time.Second * 10,

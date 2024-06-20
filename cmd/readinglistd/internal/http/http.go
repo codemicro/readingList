@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"git.tdpain.net/codemicro/readingList/cmd/readinglistd/internal/config"
 	"git.tdpain.net/codemicro/readingList/cmd/readinglistd/internal/worker"
-	"github.com/jmoiron/sqlx"
 	"io"
 	"log/slog"
 	"net/http"
@@ -15,14 +14,10 @@ import (
 	"github.com/go-playground/validator"
 )
 
-func Listen(db *sqlx.DB, conf *config.Config, newArticleChan chan *models.NewArticle) error {
-	slog.Info("starting HTTP server", "address", conf.HTTPAddress)
+func Listen(mctx *config.ModuleContext) error {
+	slog.Info("starting HTTP server", "address", mctx.Config.HTTPAddress)
 
-	e := &endpoints{
-		DB:                db,
-		Config:            conf,
-		NewArticleChannel: newArticleChan,
-	}
+	e := &endpoints{mctx}
 
 	mux := http.NewServeMux()
 	mux.Handle("POST /ingest", http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -38,13 +33,11 @@ func Listen(db *sqlx.DB, conf *config.Config, newArticleChan chan *models.NewArt
 		}
 	}))
 
-	return http.ListenAndServe(conf.HTTPAddress, mux)
+	return http.ListenAndServe(mctx.Config.HTTPAddress, mux)
 }
 
 type endpoints struct {
-	DB                *sqlx.DB
-	Config            *config.Config
-	NewArticleChannel chan *models.NewArticle
+	*config.ModuleContext
 }
 
 func (e endpoints) ingest(rw http.ResponseWriter, req *http.Request) error {
@@ -82,7 +75,7 @@ func (e endpoints) ingest(rw http.ResponseWriter, req *http.Request) error {
 	return nil
 }
 
-func (e *endpoints) generate(rw http.ResponseWriter, _ *http.Request) error {
+func (e endpoints) generate(rw http.ResponseWriter, _ *http.Request) error {
 	if err := worker.GenerateSiteAndUpload(e.DB, e.Config); err != nil {
 		return err
 	}

@@ -23,15 +23,15 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-func RunWorker(db *sqlx.DB, c chan *models.NewArticle, conf *config.Config) {
-	go worker(db, c, conf)
+func RunWorker(mctx *config.ModuleContext) {
+	go worker(mctx)
 }
 
-func worker(db *sqlx.DB, c chan *models.NewArticle, conf *config.Config) {
+func worker(mctx *config.ModuleContext) {
 	var newArticle *models.NewArticle
 rootLoop:
 	for {
-		newArticle = <-c
+		newArticle = <-mctx.NewArticleChannel
 	loop:
 		for {
 			article := &models.Article{
@@ -59,7 +59,7 @@ rootLoop:
 				article.Description = article.Description[:500] + " [trimmed]"
 			}
 
-			if err := database.InsertArticle(db, article); err != nil {
+			if err := database.InsertArticle(mctx.DB, article); err != nil {
 				slog.Error("unable to insert article", "error", err, "article", article)
 				break
 			}
@@ -70,13 +70,13 @@ rootLoop:
 			case <-ticker.C:
 				ticker.Stop()
 				break loop
-			case newArticle = <-c:
+			case newArticle = <-mctx.NewArticleChannel:
 				ticker.Stop()
 				continue
 			}
 		}
 
-		if err := GenerateSiteAndUpload(db, conf); err != nil {
+		if err := GenerateSiteAndUpload(mctx.DB, mctx.Config); err != nil {
 			slog.Error("error while executing site generation", "error", err)
 			continue
 		}
@@ -193,7 +193,7 @@ func uploadSite(conf *config.Config, reader io.Reader) error {
 	bodyBuffer := new(bytes.Buffer)
 	mpWriter := multipart.NewWriter(bodyBuffer)
 
-	if err := mpWriter.WriteField("siteName", conf.SiteName); err != nil {
+	if err := mpWriter.WriteField("siteName", conf.PalmatumSiteName); err != nil {
 		return fmt.Errorf("write field to multipart: %w", err)
 	}
 

@@ -26,7 +26,12 @@ func run() error {
 		return err
 	}
 
-	newArticleChan := make(chan *models.NewArticle, 5)
-	worker.RunWorker(db, newArticleChan, conf)
-	return http.Listen(db, conf, newArticleChan)
+	mctx := &config.ModuleContext{
+		DB:                db,
+		Config:            conf,
+		NewArticleChannel: make(chan *models.NewArticle, 5),
+	}
+
+	worker.RunWorker(mctx)
+	return http.Listen(mctx)
 }

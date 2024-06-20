@@ -1,6 +1,8 @@
 package config
 
 import (
+	"git.tdpain.net/codemicro/readingList/models"
+	"github.com/jmoiron/sqlx"
 	"go.akpain.net/cfger"
 )
 
@@ -22,4 +24,10 @@ func Get() (*Config, error) {
 		PalmatumSiteName:       cl.GetEnv("READINGLISTD_SITE_NAME").Required().AsString(),
 	}
 	return conf, nil
+}
+
+type ModuleContext struct {
+	DB                *sqlx.DB
+	Config            *Config
+	NewArticleChannel chan *models.NewArticle
 }

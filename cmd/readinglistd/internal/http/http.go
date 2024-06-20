@@ -130,7 +130,7 @@ func (e endpoints) browserIngest(rw http.ResponseWriter, req *http.Request) erro
 		StyleAttr("color: darkgreen;"),
 		g.Text("Success!"),
 	),
-		Script(g.Rawf(`setTimeout(function(){window.location.replace(%#v);}, 500);`, data.NextURL)),
+		Script(g.Raw(`setTimeout(function(){history.back();}, 500);`)),
 	).Render(rw)
 }
 

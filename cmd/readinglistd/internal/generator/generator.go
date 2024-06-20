@@ -6,7 +6,6 @@ import (
 	_ "embed"
 	"fmt"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"sort"
 	"strings"
@@ -221,7 +220,7 @@ func GenerateSite(entries []*models.Article) (string, error) {
 		return "", err
 	}
 
-	if err := ioutil.WriteFile(siteOutputDir+"/index.html", outputContent, 0644); err != nil {
+	if err := os.WriteFile(siteOutputDir+"/index.html", outputContent, 0644); err != nil {
 		return "", err
 	}
 

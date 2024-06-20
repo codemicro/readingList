@@ -9,7 +9,7 @@ type Config struct {
 	HTTPAddress            string
 	DatabaseFilename       string
 	PalmatumAuthentication string
-	SiteName               string
+	PalmatumSiteName       string
 }
 
 func Get() (*Config, error) {
@@ -19,7 +19,7 @@ func Get() (*Config, error) {
 		HTTPAddress:            cl.GetEnv("READINGLISTD_HTTP_ADDR").WithDefault(":9231").AsString(),
 		DatabaseFilename:       cl.GetEnv("READINGLISTD_DATABASE_FILENAME").WithDefault("readinglist.sqlite3.db").AsString(),
 		PalmatumAuthentication: cl.GetEnv("READINGLISTD_PALMATUM_AUTH").Required().AsString(),
-		SiteName:               cl.GetEnv("READINGLISTD_SITE_NAME").Required().AsString(),
+		PalmatumSiteName:       cl.GetEnv("READINGLISTD_SITE_NAME").Required().AsString(),
 	}
 	return conf, nil
 }

@@ -13,10 +13,10 @@ default:
     - "echo $CI_REGISTRY_PASSWORD | docker login $CI_REGISTRY --username $CI_REGISTRY_USER --password-stdin"
     - "docker info"
 
-httpingest:
+readinglistd:
   stage: build
   variables:
-    IMAGE_NAME: "${CI_REGISTRY_IMAGE}/httpingest"
+    IMAGE_NAME: "${CI_REGISTRY_IMAGE}/readinglistd"
   script:
-    - "docker build . --file cmd/httpingest/Dockerfile --tag ${IMAGE_NAME}:latest --tag ${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA#'v'}" # that weird thing #'v' thing strips a prefix of v
+    - "docker build . --tag ${IMAGE_NAME}:latest --tag ${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA#'v'}" # that weird thing #'v' thing strips a prefix of v
     - "docker push --all-tags $IMAGE_NAME"

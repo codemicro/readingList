@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"git.tdpain.net/codemicro/readingList/cmd/readinglistd/internal/config"
-	"git.tdpain.net/codemicro/readingList/cmd/readinglistd/worker"
+	"git.tdpain.net/codemicro/readingList/cmd/readinglistd/internal/worker"
 	"github.com/jmoiron/sqlx"
 	"io"
 	"log/slog"

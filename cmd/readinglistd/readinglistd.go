@@ -4,7 +4,7 @@ import (
 	"git.tdpain.net/codemicro/readingList/cmd/readinglistd/internal/config"
 	"git.tdpain.net/codemicro/readingList/cmd/readinglistd/internal/database"
 	"git.tdpain.net/codemicro/readingList/cmd/readinglistd/internal/http"
-	"git.tdpain.net/codemicro/readingList/cmd/readinglistd/worker"
+	"git.tdpain.net/codemicro/readingList/cmd/readinglistd/internal/worker"
 	"git.tdpain.net/codemicro/readingList/models"
 	"log/slog"
 )

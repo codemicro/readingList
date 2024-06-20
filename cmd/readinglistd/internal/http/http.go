@@ -82,7 +82,7 @@ func (e endpoints) ingest(rw http.ResponseWriter, req *http.Request) error {
 	return nil
 }
 
-func (e *endpoints) generate(rw http.ResponseWriter, req *http.Request) error {
+func (e *endpoints) generate(rw http.ResponseWriter, _ *http.Request) error {
 	if err := worker.GenerateSiteAndUpload(e.DB, e.Config); err != nil {
 		return err
 	}

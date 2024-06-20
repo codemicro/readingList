@@ -1,9 +1,11 @@
-package main
+package http
 
 import (
 	"crypto/subtle"
 	"encoding/json"
 	"fmt"
+	"git.tdpain.net/codemicro/readingList/cmd/readinglistd/internal/config"
+	"git.tdpain.net/codemicro/readingList/cmd/readinglistd/worker"
 	"github.com/jmoiron/sqlx"
 	"io"
 	"log/slog"
@@ -13,18 +15,24 @@ import (
 	"github.com/go-playground/validator"
 )
 
-func HTTPListen(db *sqlx.DB, conf *config, newArticleChan chan *models.NewArticle) error {
+func Listen(db *sqlx.DB, conf *config.Config, newArticleChan chan *models.NewArticle) error {
 	slog.Info("starting HTTP server", "address", conf.HTTPAddress)
+
+	e := &endpoints{
+		DB:                db,
+		Config:            conf,
+		NewArticleChannel: newArticleChan,
+	}
 
 	mux := http.NewServeMux()
 	mux.Handle("POST /ingest", http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		if err := ingestHandler(rw, req, conf, newArticleChan); err != nil {
+		if err := e.ingest(rw, req); err != nil {
 			slog.Error("error in ingest HTTP handler", "error", err, "request", req)
 			rw.WriteHeader(http.StatusInternalServerError)
 		}
 	}))
 	mux.Handle("POST /generate", http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		if err := generateHandler(rw, req, conf, db); err != nil {
+		if err := e.generate(rw, req); err != nil {
 			slog.Error("error in generate HTTP handler", "error", err, "request", req)
 			rw.WriteHeader(http.StatusInternalServerError)
 		}
@@ -33,13 +41,19 @@ func HTTPListen(db *sqlx.DB, conf *config, newArticleChan chan *models.NewArticl
 	return http.ListenAndServe(conf.HTTPAddress, mux)
 }
 
-func ingestHandler(rw http.ResponseWriter, req *http.Request, conf *config, newArticleChan chan *models.NewArticle) error {
+type endpoints struct {
+	DB                *sqlx.DB
+	Config            *config.Config
+	NewArticleChannel chan *models.NewArticle
+}
+
+func (e endpoints) ingest(rw http.ResponseWriter, req *http.Request) error {
 	if req.Method != http.MethodPost {
 		rw.WriteHeader(http.StatusMethodNotAllowed)
 		return nil
 	}
 
-	if subtle.ConstantTimeCompare([]byte("Bearer "+conf.Token), []byte(req.Header.Get("Authorization"))) == 0 {
+	if subtle.ConstantTimeCompare([]byte("Bearer "+e.Config.Token), []byte(req.Header.Get("Authorization"))) == 0 {
 		rw.WriteHeader(http.StatusUnauthorized)
 		return nil
 	}
@@ -62,14 +76,14 @@ func ingestHandler(rw http.ResponseWriter, req *http.Request, conf *config, newA
 		return nil
 	}
 
-	newArticleChan <- requestData
+	e.NewArticleChannel <- requestData
 
 	rw.WriteHeader(http.StatusNoContent)
 	return nil
 }
 
-func generateHandler(rw http.ResponseWriter, req *http.Request, conf *config, db *sqlx.DB) error {
-	if err := doSiteGeneration(db, conf); err != nil {
+func (e *endpoints) generate(rw http.ResponseWriter, req *http.Request) error {
+	if err := worker.GenerateSiteAndUpload(e.DB, e.Config); err != nil {
 		return err
 	}
 	rw.WriteHeader(204)

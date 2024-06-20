@@ -1,4 +1,4 @@
-package main
+package worker
 
 import (
 	"archive/zip"
@@ -6,6 +6,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"git.tdpain.net/codemicro/readingList/cmd/readinglistd/internal/config"
+	"git.tdpain.net/codemicro/readingList/cmd/readinglistd/internal/database"
+	"git.tdpain.net/codemicro/readingList/cmd/readinglistd/internal/generator"
 	"io"
 	"log/slog"
 	"mime/multipart"
@@ -20,11 +23,11 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-func RunWorker(db *sqlx.DB, c chan *models.NewArticle, conf *config) {
+func RunWorker(db *sqlx.DB, c chan *models.NewArticle, conf *config.Config) {
 	go worker(db, c, conf)
 }
 
-func worker(db *sqlx.DB, c chan *models.NewArticle, conf *config) {
+func worker(db *sqlx.DB, c chan *models.NewArticle, conf *config.Config) {
 	var newArticle *models.NewArticle
 rootLoop:
 	for {
@@ -56,7 +59,7 @@ rootLoop:
 				article.Description = article.Description[:500] + " [trimmed]"
 			}
 
-			if err := InsertArticle(db, article); err != nil {
+			if err := database.InsertArticle(db, article); err != nil {
 				slog.Error("unable to insert article", "error", err, "article", article)
 				break
 			}
@@ -73,7 +76,7 @@ rootLoop:
 			}
 		}
 
-		if err := doSiteGeneration(db, conf); err != nil {
+		if err := GenerateSiteAndUpload(db, conf); err != nil {
 			slog.Error("error while executing site generation", "error", err)
 			continue
 		}
@@ -140,16 +143,16 @@ func queryHackerNews(queryURL string) (string, error) {
 
 var siteGenerationLock sync.Mutex
 
-func doSiteGeneration(db *sqlx.DB, conf *config) error {
+func GenerateSiteAndUpload(db *sqlx.DB, conf *config.Config) error {
 	siteGenerationLock.Lock()
 	defer siteGenerationLock.Unlock()
 
-	allArticles, err := GetAllArticles(db)
+	allArticles, err := database.GetAllArticles(db)
 	if err != nil {
 		return fmt.Errorf("unable to fetch all articles: %w", err)
 	}
 
-	sitePath, err := GenerateSite(allArticles)
+	sitePath, err := generator.GenerateSite(allArticles)
 	if err != nil {
 		return fmt.Errorf("unable to generate site: %w", err)
 	}
@@ -186,7 +189,7 @@ func packageSite(sitePath string) (*bytes.Buffer, error) {
 	return buffer, nil
 }
 
-func uploadSite(conf *config, reader io.Reader) error {
+func uploadSite(conf *config.Config, reader io.Reader) error {
 	bodyBuffer := new(bytes.Buffer)
 	mpWriter := multipart.NewWriter(bodyBuffer)
 

@@ -20,11 +20,3 @@ httpingest:
   script:
     - "docker build . --file cmd/httpingest/Dockerfile --tag ${IMAGE_NAME}:latest --tag ${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA#'v'}" # that weird thing #'v' thing strips a prefix of v
     - "docker push --all-tags $IMAGE_NAME"
-
-readinglistd:
-  stage: build
-  variables:
-    IMAGE_NAME: "${CI_REGISTRY_IMAGE}/readinglistd"
-  script:
-    - "docker build . --file cmd/readinglistd/Dockerfile --tag ${IMAGE_NAME}:latest --tag ${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA#'v'}" # that weird thing #'v' thing strips a prefix of v
-    - "docker push --all-tags $IMAGE_NAME"

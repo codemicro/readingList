@@ -30,7 +30,7 @@ func Listen(mctx *config.ModuleContext) error {
 		}
 	}))
 
-	mux.Handle("POST /ingest/browser", http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+	mux.Handle("GET /ingest/browser", http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if err := e.browserIngest(rw, req); err != nil {
 			slog.Error("error in browserIngest HTTP handler", "error", err, "request", req)
 			rw.WriteHeader(http.StatusInternalServerError)

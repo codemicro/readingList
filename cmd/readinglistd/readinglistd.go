@@ -32,6 +32,6 @@ func run() error {
 		NewArticleChannel: make(chan *models.NewArticle, 5),
 	}
 
-	worker.RunWorker(mctx)
+	worker.RunSiteWorker(mctx)
 	return http.Listen(mctx)
 }

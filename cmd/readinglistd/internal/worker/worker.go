@@ -23,11 +23,11 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-func RunWorker(mctx *config.ModuleContext) {
-	go worker(mctx)
+func RunSiteWorker(mctx *config.ModuleContext) {
+	go siteWorker(mctx)
 }
 
-func worker(mctx *config.ModuleContext) {
+func siteWorker(mctx *config.ModuleContext) {
 	var newArticle *models.NewArticle
 rootLoop:
 	for {

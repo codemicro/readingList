@@ -74,7 +74,7 @@ func NewDB(fname string) (*sqlx.DB, error) {
 
 func InsertArticle(db *sqlx.DB, article *models.Article) error {
 	_, err := db.NamedExec(
-		`INSERT INTO articles("id", "date", "url", "title", "description", "image_url", "hacker_news_url") VALUES (:id, :date, :url, :title, :description, :image_url, :hacker_news_url, :is_favourite)`,
+		`INSERT INTO articles("id", "date", "url", "title", "description", "image_url", "hacker_news_url", "is_favourite") VALUES (:id, :date, :url, :title, :description, :image_url, :hacker_news_url, :is_favourite)`,
 		article,
 	)
 	if err != nil {

@@ -17,4 +17,5 @@ type Article struct {
 	NewArticle
 	ID            uuid.UUID
 	HackerNewsURL string `db:"hacker_news_url"`
+	IsFavourite   bool   `db:"is_favourite"`
 }

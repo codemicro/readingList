@@ -31,8 +31,6 @@ func NewDB(fname string) (*sqlx.DB, error) {
 		}
 	}
 
-	fmt.Println("current schema version", currentSchemaVersion)
-
 	switch currentSchemaVersion {
 	case 0:
 		// Note that version 0 did not originally include a schema_version mechanism so a v0 db so this statement must be if not exists

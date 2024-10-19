@@ -81,9 +81,16 @@ func (e endpoints) directIngest(rw http.ResponseWriter, req *http.Request) error
 		return nil
 	}
 
-	e.NewArticleChannel <- requestData
+	job := config.NewArticleChannelWrapper(requestData)
+	e.NewArticleChannel <- job
+	
+	if err := job.Error(); err != nil {
+		_, _ = rw.Write([]byte(err.Error()))
+		rw.WriteHeader(http.StatusBadRequest)
+	} else {
+		rw.WriteHeader(http.StatusNoContent)
+	}
 
-	rw.WriteHeader(http.StatusNoContent)
 	return nil
 }
 
@@ -124,21 +131,33 @@ func (e endpoints) browserIngest(rw http.ResponseWriter, req *http.Request) erro
 		return n.Render(rw)
 	}
 
-	e.NewArticleChannel <- &data.NewArticle
+	job := config.NewArticleChannelWrapper(&data.NewArticle)
+	e.NewArticleChannel <- job
 	
-	return basePage("Success!", P(
-		StyleAttr("color: darkgreen; font-weight: bold;"),
-		g.Text("Success!"),
-	),
-		P(
-			g.Textf("Title: %s", data.NewArticle.Title), Br(),
-			g.Textf("URL: %s", data.NewArticle.URL), Br(),
-			g.Text("Description: "),
-			g.If(data.NewArticle.Description == "", I(g.Text("none"))),
-			g.If(data.NewArticle.Description != "", g.Text(data.NewArticle.Description)),
+	var page g.Node
+	
+	if err := job.Error(); err != nil {
+		page = basePage("Addition failed", P(
+			StyleAttr("color: darkred; font-weight: bold;"),
+			g.Text("Error: " + err.Error()),
+		))
+	} else {
+		page = basePage("Success!", P(
+			StyleAttr("color: darkgreen; font-weight: bold;"),
+			g.Text("Success!"),
 		),
-		Script(g.Raw(`setTimeout(function(){history.back();}, 750);`)),
-	).Render(rw)
+			P(
+				g.Textf("Title: %s", data.NewArticle.Title), Br(),
+				g.Textf("URL: %s", data.NewArticle.URL), Br(),
+				g.Text("Description: "),
+				g.If(data.NewArticle.Description == "", I(g.Text("none"))),
+				g.If(data.NewArticle.Description != "", g.Text(data.NewArticle.Description)),
+			),
+			Script(g.Raw(`setTimeout(function(){history.back();}, 750);`)),
+		)
+	}
+	
+	return page.Render(rw)
 }
 
 func basePage(title string, content ...g.Node) g.Node {

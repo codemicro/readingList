@@ -26,8 +26,29 @@ func Get() (*Config, error) {
 	return conf, nil
 }
 
+type ArticleChannelWrapper struct {
+	Article *models.NewArticle
+	finishedChannel chan error
+}
+
+func NewArticleChannelWrapper(a *models.NewArticle) *ArticleChannelWrapper {
+	return &ArticleChannelWrapper{
+		Article: a,
+		finishedChannel: make(chan error, 1),
+	}
+}
+
+func (a *ArticleChannelWrapper) Finish(e error) {
+	a.finishedChannel <- e
+	close(a.finishedChannel)
+}
+
+func (a *ArticleChannelWrapper) Error() error {
+	return <-a.finishedChannel
+}
+
 type ModuleContext struct {
 	DB                *sqlx.DB
 	Config            *Config
-	NewArticleChannel chan *models.NewArticle
+	NewArticleChannel chan *ArticleChannelWrapper
 }

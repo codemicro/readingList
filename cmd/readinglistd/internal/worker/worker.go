@@ -17,7 +17,7 @@ import (
 	"os"
 	"sync"
 	"time"
-
+	"errors"
 	"git.tdpain.net/codemicro/readingList/models"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -28,20 +28,21 @@ func RunSiteWorker(mctx *config.ModuleContext) {
 }
 
 func siteWorker(mctx *config.ModuleContext) {
-	var newArticle *models.NewArticle
+	var job *config.ArticleChannelWrapper
 rootLoop:
 	for {
-		newArticle = <-mctx.NewArticleChannel
+		job = <-mctx.NewArticleChannel
 	loop:
-		for {
+		for {			
 			article := &models.Article{
-				NewArticle: *newArticle,
+				NewArticle: *job.Article,
 				ID:         uuid.New(),
 			}
-
+			
 			{ // remove fragment
 				parsed, err := url.Parse(article.URL)
 				if err != nil {
+					job.Finish(errors.New("invalid URL"))
 					slog.Error("invalud URL supplied to worker", "url", article.URL)
 					continue rootLoop
 				}
@@ -60,17 +61,20 @@ rootLoop:
 			}
 
 			if err := database.InsertArticle(mctx.DB, article); err != nil {
+				job.Finish(errors.New("fatal database error"))
 				slog.Error("unable to insert article", "error", err, "article", article)
-				break
+				continue rootLoop
 			}
 
+			job.Finish(nil)
+			
 			// The purpose of this is to delay rebuilding the site if another article appears in the next 20 seconds
 			ticker := time.NewTicker(time.Second * 20)
 			select {
 			case <-ticker.C:
 				ticker.Stop()
 				break loop
-			case newArticle = <-mctx.NewArticleChannel:
+			case job = <-mctx.NewArticleChannel:
 				ticker.Stop()
 				continue
 			}

@@ -5,7 +5,6 @@ import (
 	"git.tdpain.net/codemicro/readingList/cmd/readinglistd/internal/database"
 	"git.tdpain.net/codemicro/readingList/cmd/readinglistd/internal/http"
 	"git.tdpain.net/codemicro/readingList/cmd/readinglistd/internal/worker"
-	"git.tdpain.net/codemicro/readingList/models"
 	"log/slog"
 )
 
@@ -29,7 +28,7 @@ func run() error {
 	mctx := &config.ModuleContext{
 		DB:                db,
 		Config:            conf,
-		NewArticleChannel: make(chan *models.NewArticle, 5),
+		NewArticleChannel: make(chan *config.ArticleChannelWrapper, 5),
 	}
 
 	worker.RunSiteWorker(mctx)

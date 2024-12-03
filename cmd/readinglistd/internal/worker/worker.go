@@ -197,11 +197,11 @@ func uploadSite(conf *config.Config, reader io.Reader) error {
 	bodyBuffer := new(bytes.Buffer)
 	mpWriter := multipart.NewWriter(bodyBuffer)
 
-	if err := mpWriter.WriteField("siteName", conf.PalmatumSiteName); err != nil {
+	if err := mpWriter.WriteField("slug", conf.PalmatumSiteName); err != nil {
 		return fmt.Errorf("write field to multipart: %w", err)
 	}
 
-	fieldWriter, err := mpWriter.CreateFormFile("archive", "site.zip")
+	fieldWriter, err := mpWriter.CreateFormFile("bundle", "site.zip")
 	if err != nil {
 		return fmt.Errorf("create multipart field: %w", err)
 	}
@@ -214,7 +214,7 @@ func uploadSite(conf *config.Config, reader io.Reader) error {
 		return fmt.Errorf("failed to close multipart writer: %w", err)
 	}
 
-	req, err := http.NewRequest(http.MethodPost, "https://pages.tdpain.net/-/upload", bodyBuffer)
+	req, err := http.NewRequest(http.MethodPost, "https://management.pages.tdpain.net/api/site/bundle", bodyBuffer)
 	if err != nil {
 		return fmt.Errorf("make http request: %w", err)
 	}

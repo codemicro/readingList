@@ -137,13 +137,13 @@ func (e endpoints) browserIngest(rw http.ResponseWriter, req *http.Request) erro
 	var page g.Node
 	
 	if err := job.Error(); err != nil {
-		page = basePage("Addition failed", P(
-			StyleAttr("color: darkred; font-weight: bold;"),
+		page = basePageWithBackgroundColour("Addition failed", "#fadbd8", P(
+			StyleAttr("font-weight: bold;"),
 			g.Text("Error: " + err.Error()),
 		))
 	} else {
-		page = basePage("Success!", P(
-			StyleAttr("color: darkgreen; font-weight: bold;"),
+		page = basePageWithBackgroundColour("Success!", "#d4efdf", P(
+			StyleAttr("font-weight: bold;"),
 			g.Text("Success!"),
 		),
 			P(
@@ -160,21 +160,29 @@ func (e endpoints) browserIngest(rw http.ResponseWriter, req *http.Request) erro
 	return page.Render(rw)
 }
 
-func basePage(title string, content ...g.Node) g.Node {
+func basePageWithBackgroundColour(title, colour string, content ...g.Node) g.Node {
+	styles := `body {
+		font-family: sans-serif;
+		font-size: 1.1rem;
+		padding: 1em;
+	`
+	if colour != "" {
+		styles += "background-color: " + colour + ";\n"
+	}
+	styles += "}"
+	
 	return HTML(
 		Head(
 			Meta(g.Attr("name", "viewport"), g.Attr("content", "width=device-width, initial-scale=1")),
 			TitleEl(g.Text(title)),
-			StyleEl(g.Text(`
-body {
-	font-family: sans-serif;
-	font-size: 1.1rem;
-	padding: 1em;
-}
-`)),
+			StyleEl(g.Text(styles)),
 		),
 		Body(content...),
 	)
+}
+
+func basePage(title string, content ...g.Node) g.Node {
+	return basePageWithBackgroundColour(title, "", content...)
 }
 
 func unorderedList(x []string) g.Node {

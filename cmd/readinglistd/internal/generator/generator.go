@@ -22,10 +22,10 @@ const dateFormat = "2006-01-02"
 func renderHTMLPage(body ...g.Node) ([]byte, error) {
 	
 	b := new(bytes.Buffer)
-	if err := g.Group([]g.Node{
-		Meta(g.Attr("http-equiv", "refresh"), g.Attr("content", "0; url=https://www.akpain.net/readingList/")),
-		Div(g.Attr("id", "content"), g.Group(body)),
-	}).Render(b); err != nil {
+	if err := Meta(g.Attr("http-equiv", "refresh"), g.Attr("content", "0; url=https://www.akpain.net/readingList/")).Render(b); err != nil {
+		return nil, err
+	}
+	if err := Div(g.Attr("id", "content"), g.Group(body)).Render(b); err != nil {
 		return nil, err
 	}
 	return b.Bytes(), nil

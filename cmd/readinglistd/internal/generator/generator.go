@@ -13,22 +13,19 @@ import (
 
 	"git.tdpain.net/codemicro/readingList/models"
 	g "github.com/maragudk/gomponents"
-	c "github.com/maragudk/gomponents/components"
 	. "github.com/maragudk/gomponents/html"
 )
 
 const dateFormat = "2006-01-02"
 
 // renderHTMLPage renders a complete HTML page
-func renderHTMLPage(title string, body []g.Node) ([]byte, error) {
+func renderHTMLPage(body ...g.Node) ([]byte, error) {
+	
 	b := new(bytes.Buffer)
-	err := c.HTML5(c.HTML5Props{
-		Title:    title,
-		Language: "en-GB",
-		Head:     []g.Node{Link(g.Attr("rel", "stylesheet"), g.Attr("href", "ghpages.css"), g.Attr("type", "text/css"))},
-		Body:     []g.Node{Div(g.Attr("class", "container"), g.Group(body))},
-	}).Render(b)
-	if err != nil {
+	if err := g.Group([]g.Node{
+		Meta(g.Attr("http-equiv", "refresh"), g.Attr("content", "0; url=https://www.akpain.net/readingList/")),
+		Div(g.Attr("id", "content"), g.Group(body)),
+	}).Render(b); err != nil {
 		return nil, err
 	}
 	return b.Bytes(), nil
@@ -156,7 +153,7 @@ func articleLinkComponent(url, title, description, date, hnURL string) g.Node {
 				g.Attr("href", hnURL),
 				g.Attr("rel", "noopener"),
 				Img(
-					g.Attr("src", "img/y18.svg"),
+					g.Attr("src", "https://pages.tdpain.net/readingList/img/y18.svg"),
 					g.Attr("height", "14em"),
 					g.Attr("title", "View on Hacker News"),
 					g.Attr("alt", "Hacker News logo"),
@@ -176,10 +173,9 @@ func GenerateSite(entries []*models.Article) (string, error) {
 	const pageTitle = "akp's reading list"
 
 	head := Div(
-		H1(g.Text(pageTitle)),
 		P(g.Raw(
 			fmt.Sprintf(
-				"A mostly complete list of articles I've read on the internet.<br>The articles on this list do not necessarily represent my views or opinions and should not be construed as doing so.<br><br>There are currently %d entries in the list<br>Last modified %s<br>Repo: %s",
+				"There are currently %d entries in the list<br>Last modified %s<br>Repo: %s",
 				numArticles,
 				time.Now().Format(dateFormat),
 				"<a href=\"https://git.tdpain.net/codemicro/readingList\" rel=\"noopener\"><code>codemicro/readingList</code></a>",
@@ -189,7 +185,7 @@ func GenerateSite(entries []*models.Article) (string, error) {
 
 	listing := makeListHTML(groupedEntries)
 
-	outputContent, err := renderHTMLPage(pageTitle, []g.Node{head, Hr(), listing})
+	outputContent, err := renderHTMLPage(head, Hr(), listing)
 	if err != nil {
 		return "", err
 	}

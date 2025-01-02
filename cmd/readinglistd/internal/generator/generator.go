@@ -154,12 +154,12 @@ func articleLinkComponent(url, title, description, date, hnURL string) g.Node {
 				g.Attr("rel", "noopener"),
 				Img(
 					g.Attr("src", "https://pages.tdpain.net/readingList/img/y18.svg"),
-					g.Attr("height", "14em"),
+					g.Attr("height", "15px"),
 					g.Attr("title", "View on Hacker News"),
 					g.Attr("alt", "Hacker News logo"),
 				)),
 		})),
-		g.If(description != "", Span(g.Attr("class", "secondary"), g.Text(" - "+description))),
+		g.If(description != "", Span(g.Attr("class", "text--secondary"), g.Text(" - "+description))),
 	)
 }
 

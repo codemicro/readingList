@@ -1,96 +1,80 @@
 package database
 
 import (
-	"database/sql"
-	"errors"
+	"context"
 	"fmt"
+	"git.tdpain.net/codemicro/readingList/cmd/readinglistd/internal/config"
 	"git.tdpain.net/codemicro/readingList/models"
-	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"time"
 )
 
-const programSchemaVersion = 2
+type DB struct {
+	client   *mongo.Client
+	database *mongo.Database
+}
 
-func NewDB(fname string) (*sqlx.DB, error) {
-	db, err := sqlx.Connect("sqlite3", fname)
+func NewDB(conf *config.Config) (*DB, error) {
+	client, err := mongo.Connect(options.Client().ApplyURI(conf.MongoDSN))
 	if err != nil {
 		return nil, fmt.Errorf("open database: %w", err)
 	}
-
-	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS schema_version(
-		"n" integer not null
-	)`)
-	if err != nil {
-		return nil, fmt.Errorf("create schema_version table: %w", err)
-	}
-
-	var currentSchemaVersion int
-	if err := db.QueryRowx("SELECT n FROM schema_version").Scan(&currentSchemaVersion); err != nil {
-		if !errors.Is(err, sql.ErrNoRows) {
-			return nil, fmt.Errorf("unable to read schema version from database: %w", err)
-		}
-	}
-
-	switch currentSchemaVersion {
-	case 0:
-		// Note that version 0 did not originally include a schema_version mechanism so a v0 db so this statement must be if not exists
-		_, err = db.Exec(`CREATE TABLE IF NOT EXISTS articles(
-			"id" varchar not null primary key,
-			"date" datetime not null,
-			"url" varchar not null,
-			"title" varchar not null,
-			"description" varchar,
-			"image_url" varchar,
-			"hacker_news_url" varchar
-		)`)
-		if err != nil {
-			return nil, fmt.Errorf("create articles table: %w", err)
-		}
-		currentSchemaVersion = 1
-		fallthrough
-	case 1:
-		_, err = db.Exec(`ALTER TABLE articles ADD COLUMN is_favourite INTEGER NOT NULL DEFAULT FALSE`)
-		if err != nil {
-			return nil, fmt.Errorf("add is_favourite to articles table: %w", err)
-		}
-		currentSchemaVersion = 2
-		fallthrough
-	case programSchemaVersion:
-		// noop
-	}
-
-	_, err = db.Exec(`DELETE FROM schema_version`)
-	if err != nil {
-		return nil, fmt.Errorf("delete old schema version number: %w", err)
-	}
-
-	_, err = db.Exec(`INSERT INTO schema_version(n) VALUES (?)`, programSchemaVersion)
-	if err != nil {
-		return nil, fmt.Errorf("insert schema version number: %w", err)
-	}
-
-	return db, nil
+	return &DB{client: client, database: client.Database(conf.MongoDatabase)}, nil
 }
 
-func InsertArticle(db *sqlx.DB, article *models.Article) error {
-	_, err := db.NamedExec(
-		`INSERT INTO articles("id", "date", "url", "title", "description", "image_url", "hacker_news_url", "is_favourite") VALUES (:id, :date, :url, :title, :description, :image_url, :hacker_news_url, :is_favourite)`,
-		article,
-	)
+func (db *DB) InsertArticle(article *models.Article) error {
+	res, err := db.database.Collection("articles").InsertOne(context.Background(), article)
 	if err != nil {
-		return fmt.Errorf("insert article: %w", err)
+		return fmt.Errorf("insert new article: %w", err)
 	}
+	fmt.Printf("ID: %v\n", res.InsertedID)
+	article.ID = res.InsertedID
 	return nil
 }
 
-func GetAllArticles(db *sqlx.DB) ([]*models.Article, error) {
-	articles := []*models.Article{}
-	err := db.Select(&articles, `SELECT * FROM articles`)
+func (db *DB) GetAllArticles() ([]*models.Article, error) {
+	cursor, err := db.database.Collection("articles").Aggregate(context.Background(), mongo.Pipeline{
+		bson.D{{"$sort", bson.D{{"date", 1}}}},
+	})
 	if err != nil {
-		return nil, fmt.Errorf("select all articles: %w", err)
+		return nil, fmt.Errorf("find all articles: %w", err)
 	}
-	// if err := res.StructScan(&articles); err != nil {
-	// 	return nil, fmt.Errorf("scan article results: %w", err)
-	// }
-	return articles, nil
+	defer cursor.Close(context.Background())
+
+	var results []*models.Article
+	if err := cursor.All(context.Background(), &results); err != nil {
+		return nil, fmt.Errorf("read all articles: %w", err)
+	}
+
+	return results, nil
+}
+
+func (db *DB) GetArticlesForMonth(year int, month int) ([]*models.Article, error) {
+	start := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
+	var end time.Time
+	if month+1 > 12 {
+		end = time.Date(year+1, time.Month(1), 1, 0, 0, 0, 0, time.UTC)
+	} else {
+		end = time.Date(year, time.Month(month+1), 1, 0, 0, 0, 0, time.UTC)
+	}
+
+	cursor, err := db.database.Collection("articles").Aggregate(context.Background(), mongo.Pipeline{
+		bson.D{{"$match", bson.D{{"date", bson.D{{"$gt", start}}}}}},
+		bson.D{{"$match", bson.D{{"date", bson.D{{"$lt", end}}}}}},
+		bson.D{{"$sort", bson.D{{"date", 1}}}},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("find all articles: %w", err)
+	}
+	defer cursor.Close(context.Background())
+
+	var results []*models.Article
+	if err := cursor.All(context.Background(), &results); err != nil {
+		return nil, fmt.Errorf("read all articles: %w", err)
+	}
+
+	return results, nil
 }

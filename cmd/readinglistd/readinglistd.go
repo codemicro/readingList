@@ -4,7 +4,6 @@ import (
 	"git.tdpain.net/codemicro/readingList/cmd/readinglistd/internal/config"
 	"git.tdpain.net/codemicro/readingList/cmd/readinglistd/internal/database"
 	"git.tdpain.net/codemicro/readingList/cmd/readinglistd/internal/http"
-	"git.tdpain.net/codemicro/readingList/cmd/readinglistd/internal/worker"
 	"log/slog"
 )
 
@@ -20,17 +19,10 @@ func run() error {
 		return err
 	}
 
-	db, err := database.NewDB(conf.DatabaseFilename)
+	db, err := database.NewDB(conf)
 	if err != nil {
 		return err
 	}
-
-	mctx := &config.ModuleContext{
-		DB:                db,
-		Config:            conf,
-		NewArticleChannel: make(chan *config.ArticleChannelWrapper, 5),
-	}
-
-	worker.RunSiteWorker(mctx)
-	return http.Listen(mctx)
+	
+	return http.Listen(conf, db)
 }

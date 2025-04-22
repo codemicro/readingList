@@ -3,8 +3,10 @@ package http
 import (
 	"crypto/subtle"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"git.tdpain.net/codemicro/readingList/cmd/readinglistd/internal/config"
+	"git.tdpain.net/codemicro/readingList/cmd/readinglistd/internal/database"
 	"git.tdpain.net/codemicro/readingList/models"
 	"github.com/go-playground/validator"
 	g "github.com/maragudk/gomponents"
@@ -12,14 +14,16 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
 
-func Listen(mctx *config.ModuleContext) error {
-	slog.Info("starting HTTP server", "address", mctx.Config.HTTPAddress)
+func Listen(conf *config.Config, db *database.DB) error {
+	slog.Info("starting HTTP server", "address", conf.HTTPAddress)
 
-	e := &endpoints{mctx}
+	e := &endpoints{DB: db, Config: conf}
 
 	mux := http.NewServeMux()
 
@@ -37,18 +41,19 @@ func Listen(mctx *config.ModuleContext) error {
 		}
 	}))
 
-	//mux.Handle("POST /generate", http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-	//	if err := e.generate(rw, req); err != nil {
-	//		slog.Error("error in generate HTTP handler", "error", err, "request", req)
-	//		rw.WriteHeader(http.StatusInternalServerError)
-	//	}
-	//}))
+	mux.Handle("GET /list", http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		if err := e.list(rw, req); err != nil {
+			slog.Error("error in list HTTP handler", "error", err, "request", req)
+			rw.WriteHeader(http.StatusInternalServerError)
+		}
+	}))
 
-	return http.ListenAndServe(mctx.Config.HTTPAddress, mux)
+	return http.ListenAndServe(conf.HTTPAddress, mux)
 }
 
 type endpoints struct {
-	*config.ModuleContext
+	DB     *database.DB
+	Config *config.Config
 }
 
 // directIngest is an ingest endpoint that accepts JSON-encoded bodies.
@@ -81,10 +86,7 @@ func (e endpoints) directIngest(rw http.ResponseWriter, req *http.Request) error
 		return nil
 	}
 
-	job := config.NewArticleChannelWrapper(requestData)
-	e.NewArticleChannel <- job
-	
-	if err := job.Error(); err != nil {
+	if err := processNewArticle(e.DB, requestData); err != nil {
 		_, _ = rw.Write([]byte(err.Error()))
 		rw.WriteHeader(http.StatusBadRequest)
 	} else {
@@ -131,15 +133,11 @@ func (e endpoints) browserIngest(rw http.ResponseWriter, req *http.Request) erro
 		return n.Render(rw)
 	}
 
-	job := config.NewArticleChannelWrapper(&data.NewArticle)
-	e.NewArticleChannel <- job
-	
 	var page g.Node
-	
-	if err := job.Error(); err != nil {
+	if err := processNewArticle(e.DB, &data.NewArticle); err != nil {
 		page = basePageWithBackgroundColour("Addition failed", "#fadbd8", P(
 			StyleAttr("font-weight: bold;"),
-			g.Text("Error: " + err.Error()),
+			g.Text("Error: "+err.Error()),
 		))
 	} else {
 		page = basePageWithBackgroundColour("Success!", "#d4efdf", P(
@@ -156,8 +154,37 @@ func (e endpoints) browserIngest(rw http.ResponseWriter, req *http.Request) erro
 			Script(g.Raw(`setTimeout(function(){history.back();}, 750);`)),
 		)
 	}
-	
+
 	return page.Render(rw)
+}
+
+func (e endpoints) list(rw http.ResponseWriter, req *http.Request) error {
+	year, _ := strconv.Atoi(req.URL.Query().Get("year"))
+	month, _ := strconv.Atoi(req.URL.Query().Get("month"))
+
+	var articles []*models.Article
+	var err error
+
+	if year != 0 && month != 0 {
+		articles, err = e.DB.GetArticlesForMonth(year, month)
+		if err != nil {
+			return fmt.Errorf("get articles for month %d-%d: %w", year, month, err)
+		}
+	} else {
+		articles, err = e.DB.GetAllArticles()
+		if err != nil {
+			return fmt.Errorf("get all articles: %w", err)
+		}
+	}
+
+	res, err := json.Marshal(articles)
+	if err != nil {
+		return fmt.Errorf("marshal all articles: %w", err)
+	}
+
+	rw.Header().Set("Content-Type", "application/json")
+	_, _ = rw.Write(res)
+	return nil
 }
 
 func basePageWithBackgroundColour(title, colour string, content ...g.Node) g.Node {
@@ -170,7 +197,7 @@ func basePageWithBackgroundColour(title, colour string, content ...g.Node) g.Nod
 		styles += "background-color: " + colour + ";\n"
 	}
 	styles += "}"
-	
+
 	return HTML(
 		Head(
 			Meta(g.Attr("name", "viewport"), g.Attr("content", "width=device-width, initial-scale=1")),
@@ -191,6 +218,38 @@ func unorderedList(x []string) g.Node {
 	})...)
 }
 
+func processNewArticle(db *database.DB, newArticle *models.NewArticle) error {
+	article := &models.Article{
+		NewArticle: *newArticle,
+	}
+
+	{ // remove fragment
+		parsed, err := url.Parse(article.URL)
+		if err != nil {
+			return errors.New("invalid URL")
+		}
+		parsed.Fragment = ""
+		article.URL = parsed.String()
+	}
+
+	hnURL, err := queryHackerNews(article.URL)
+	if err != nil {
+		slog.Warn("unable to query hacker news", "error", err, "article", article)
+	}
+	article.HackerNewsURL = hnURL
+
+	if len(article.Description) > 500 {
+		article.Description = article.Description[:500] + " [trimmed]"
+	}
+
+	if err := db.InsertArticle(article); err != nil {
+		slog.Error("unable to insert article", "error", err, "article", newArticle)
+		return errors.New("fatal database error")
+	}
+
+	return nil
+}
+
 //func (e endpoints) generate(rw http.ResponseWriter, _ *http.Request) error {
 //	if err := worker.GenerateSiteAndUpload(e.DB, e.Config); err != nil {
 //		return err
@@ -198,3 +257,61 @@ func unorderedList(x []string) g.Node {
 //	rw.WriteHeader(204)
 //	return nil
 //}
+
+// queryHackerNews searches the Hacker News index to find a submission with a matching URL to that provided.
+// If a submission is found, its URL is returned. If no submission is found, an empty string is returned. If multiple submissions are found, the URL of the one with the most points is returned.
+func queryHackerNews(queryURL string) (string, error) {
+	queryParams := make(url.Values)
+	queryParams.Add("restrictSearchableAttributes", "url")
+	queryParams.Add("hitsPerPage", "1000")
+	queryParams.Add("query", queryURL)
+
+	req, err := http.NewRequest("GET", "https://hn.algolia.com/api/v1/search?"+queryParams.Encode(), nil)
+	if err != nil {
+		return "", err
+	}
+
+	resp, err := new(http.Client).Do(req)
+	if err != nil {
+		return "", err
+	}
+
+	if resp.StatusCode != 200 {
+		return "", fmt.Errorf("HN Search returned a non-200 status code: %d", resp.StatusCode)
+	}
+
+	responseBody, _ := io.ReadAll(resp.Body)
+	_ = resp.Body.Close()
+
+	type hackerNewsEntry struct {
+		ObjectID string `json:"objectID"`
+		Points   int    `json:"points"`
+	}
+
+	var x struct {
+		Hits []*hackerNewsEntry `json:"hits"`
+	}
+
+	err = json.Unmarshal(responseBody, &x)
+	if err != nil {
+		return "", err
+	}
+
+	var targetSubmission *hackerNewsEntry
+	if len(x.Hits) == 0 {
+		return "", nil
+	} else if len(x.Hits) == 1 {
+		targetSubmission = x.Hits[0]
+	} else {
+		// must be more than one hit
+		var topRatedSubmission *hackerNewsEntry
+		for _, entry := range x.Hits {
+			if topRatedSubmission == nil || entry.Points > topRatedSubmission.Points {
+				topRatedSubmission = entry
+			}
+		}
+		targetSubmission = topRatedSubmission
+	}
+
+	return fmt.Sprintf("https://news.ycombinator.com/item?id=%s", targetSubmission.ObjectID), nil
+}
